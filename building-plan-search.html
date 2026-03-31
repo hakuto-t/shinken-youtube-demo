@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ベースプラン事例検索</title>
+  <style>
+    :root {
+      --butter: #FFE497;
+      --butter-light: #FFF8E1;
+      --mercury: #BEC7B9;
+      --mercury-light: #e8ece6;
+      --rose: #D5A4A3;
+      --rose-light: #f3e0df;
+      --apricot: #EEB1A2;
+      --apricot-light: #fbe8e3;
+      --orange: #D16D3B;
+      --orange-dark: #b85a2f;
+      --bg: #FDF9F3;
+      --card-bg: #ffffff;
+      --text: #3d3028;
+      --text-light: #8a7e72;
+      --border: #e8e0d6;
+      --radius: 12px;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
+      background: var(--bg); color: var(--text); min-height: 100vh;
+    }
+    .header {
+      background: linear-gradient(135deg, var(--orange) 0%, var(--rose) 100%);
+      color: white; padding: 28px 24px; text-align: center;
+      box-shadow: 0 4px 20px rgba(209, 109, 59, 0.25);
+    }
+    .header h1 { font-size: 26px; font-weight: 700; margin-bottom: 6px; }
+    .header p { font-size: 13px; opacity: 0.9; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 24px 16px; }
+
+    /* Plan selector */
+    .plan-selector { margin-bottom: 28px; }
+    .plan-type-row { margin-bottom: 16px; }
+    .plan-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .plan-chip {
+      padding: 10px 16px; border-radius: 24px; border: 2px solid var(--border);
+      background: var(--card-bg); cursor: pointer; transition: all 0.2s;
+      font-size: 14px; font-weight: 600; color: var(--text); user-select: none;
+      display: flex; flex-direction: column; align-items: center; gap: 2px;
+    }
+    .plan-chip:hover { border-color: var(--apricot); background: var(--apricot-light); }
+    .plan-chip.active-hiraya { border-color: var(--orange); background: var(--orange); color: white; }
+    .plan-chip.active-2f { border-color: var(--rose); background: var(--rose); color: white; }
+    .plan-chip .chip-main { display: flex; align-items: center; gap: 6px; }
+    .plan-chip .chip-count {
+      font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 10px;
+      background: rgba(255,255,255,0.3);
+    }
+    .plan-chip.active-hiraya .chip-count,
+    .plan-chip.active-2f .chip-count { background: rgba(255,255,255,0.35); }
+    .plan-chip .chip-price {
+      font-size: 11px; opacity: 0.7;
+    }
+    .plan-chip.active-hiraya .chip-price,
+    .plan-chip.active-2f .chip-price { opacity: 0.9; }
+
+    .type-divider { display: flex; align-items: center; gap: 12px; margin: 4px 0 12px; }
+    .type-divider span { font-size: 12px; font-weight: 700; color: var(--text-light); white-space: nowrap; }
+    .type-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+    /* Selected plan header */
+    .selected-plan-header {
+      background: var(--card-bg); border-radius: var(--radius); border: 1px solid var(--border);
+      padding: 20px 24px; margin-bottom: 20px; display: none;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    .selected-plan-header.visible { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+    .plan-title-area { display: flex; align-items: center; gap: 12px; }
+    .plan-title-area h2 { font-size: 22px; font-weight: 800; }
+    .plan-type-badge { padding: 4px 14px; border-radius: 20px; font-size: 12px; font-weight: 700; color: white; }
+    .plan-type-badge.hiraya { background: var(--orange); }
+    .plan-type-badge.nikai { background: var(--rose); }
+    .plan-stats { display: flex; gap: 20px; align-items: center; }
+    .plan-stat { text-align: center; }
+    .plan-stat-num { font-size: 24px; font-weight: 800; color: var(--orange); }
+    .plan-stat-label { font-size: 11px; color: var(--text-light); }
+    .plan-base-price {
+      text-align: center; padding: 8px 16px; background: var(--butter-light);
+      border-radius: 10px; border: 1px solid var(--butter);
+    }
+    .plan-base-price .price-label { font-size: 10px; color: var(--text-light); font-weight: 600; }
+    .plan-base-price .price-value { font-size: 20px; font-weight: 800; color: var(--orange-dark); }
+
+    /* Option filter */
+    .option-filter-bar {
+      background: var(--card-bg); border-radius: var(--radius); border: 1px solid var(--border);
+      padding: 16px 20px; margin-bottom: 20px; display: none;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    .option-filter-bar.visible { display: block; }
+    .option-filter-bar .filter-label { font-size: 12px; font-weight: 600; color: var(--text-light); margin-bottom: 8px; }
+    .option-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+    .option-chip {
+      padding: 6px 14px; border-radius: 20px; border: 1.5px solid var(--border);
+      background: white; cursor: pointer; transition: all 0.2s;
+      font-size: 13px; font-weight: 500; color: var(--text);
+    }
+    .option-chip:hover { border-color: var(--butter); background: var(--butter-light); }
+    .option-chip.active { border-color: var(--orange); background: var(--orange); color: white; }
+    .style-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .style-chip {
+      padding: 6px 14px; border-radius: 20px; border: 1.5px solid var(--border);
+      background: white; cursor: pointer; transition: all 0.2s; font-size: 13px; font-weight: 600;
+    }
+    .style-chip:hover { opacity: 0.8; }
+    .style-chip.active { border-width: 2.5px; }
+    .style-chip[data-style="COZY"] { color: #7a6520; border-color: var(--butter); }
+    .style-chip[data-style="COZY"].active { background: var(--butter); }
+    .style-chip[data-style="LOHAS"] { color: #4a5545; border-color: var(--mercury); }
+    .style-chip[data-style="LOHAS"].active { background: var(--mercury); }
+    .style-chip[data-style="NERO"] { color: #6b3a39; border-color: var(--rose); }
+    .style-chip[data-style="NERO"].active { background: var(--rose); }
+    .style-chip[data-style="VILLA"] { color: #7a3d2a; border-color: var(--apricot); }
+    .style-chip[data-style="VILLA"].active { background: var(--apricot); }
+
+    /* Results */
+    .results-count { font-size: 13px; color: var(--text-light); margin-bottom: 14px; padding: 0 4px; }
+    .results-count strong { color: var(--orange); font-size: 18px; }
+    .results-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 14px; }
+    @media (max-width: 768px) { .results-grid { grid-template-columns: 1fr; } }
+
+    .result-card {
+      background: var(--card-bg); border-radius: var(--radius); border: 1px solid var(--border);
+      overflow: hidden; transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .result-card:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.08); }
+    .card-top {
+      padding: 14px 18px; border-bottom: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .card-top.style-COZY { background: var(--butter-light); }
+    .card-top.style-LOHAS { background: var(--mercury-light); }
+    .card-top.style-NERO { background: var(--rose-light); }
+    .card-top.style-VILLA { background: var(--apricot-light); }
+    .card-customer { font-size: 15px; font-weight: 700; }
+    .card-badges { display: flex; gap: 5px; }
+    .style-badge { padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: 0.3px; }
+    .style-badge.COZY { background: var(--butter); color: #7a6520; }
+    .style-badge.LOHAS { background: var(--mercury); color: #4a5545; }
+    .style-badge.NERO { background: var(--rose); color: #6b3a39; }
+    .style-badge.VILLA { background: var(--apricot); color: #7a3d2a; }
+
+    .card-body { padding: 14px 18px; }
+    .card-option-section { margin-bottom: 12px; }
+    .card-option-label { font-size: 11px; color: var(--text-light); font-weight: 600; margin-bottom: 6px; }
+    .card-option-label.base { color: var(--orange); }
+    .option-visual { display: flex; flex-wrap: wrap; gap: 6px; }
+    .option-room {
+      display: flex; align-items: center; gap: 4px; padding: 5px 12px;
+      border-radius: 8px; font-size: 13px; font-weight: 600;
+      background: var(--butter-light); border: 1px solid var(--butter); color: #7a6520;
+    }
+    .option-room .plus { color: var(--orange); font-weight: 800; margin-right: 2px; }
+    .option-none {
+      padding: 5px 12px; border-radius: 8px; font-size: 13px;
+      background: #f5f0e8; color: var(--text-light); border: 1px solid var(--border);
+    }
+
+    /* Price section */
+    .card-price-section {
+      background: #faf6f0; border-radius: 8px; padding: 10px 14px; margin-bottom: 12px;
+      border: 1px solid var(--border);
+    }
+    .price-row {
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 12px; color: var(--text-light); padding: 2px 0;
+    }
+    .price-row .price-val { font-weight: 600; color: var(--text); }
+    .price-row.option-price { color: var(--orange-dark); }
+    .price-row.option-price .price-val { color: var(--orange-dark); }
+    .price-divider { border-top: 1px dashed var(--border); margin: 6px 0; }
+    .price-row.total { font-size: 14px; font-weight: 700; color: var(--text); }
+    .price-row.total .price-val { font-size: 16px; font-weight: 800; color: var(--orange); }
+
+    /* PDF buttons */
+    .pdf-row { display: flex; gap: 8px; }
+    .btn-pdf {
+      display: flex; align-items: center; justify-content: center; gap: 5px;
+      flex: 1; padding: 9px 8px; color: white; border: none; border-radius: 8px;
+      font-size: 12px; font-weight: 600; cursor: pointer; text-decoration: none;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .btn-pdf.heimen { background: linear-gradient(135deg, var(--orange) 0%, var(--orange-dark) 100%); }
+    .btn-pdf.ritumen { background: linear-gradient(135deg, var(--rose) 0%, #b8817f 100%); }
+    .btn-pdf:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+    .btn-pdf svg { width: 14px; height: 14px; }
+    .btn-folder {
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      width: 100%; padding: 9px; background: var(--mercury); color: #3d4a38;
+      border: none; border-radius: 8px; font-size: 12px; font-weight: 600;
+      cursor: pointer; text-decoration: none; transition: all 0.15s;
+    }
+    .btn-folder:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+    .btn-folder svg { width: 14px; height: 14px; }
+
+    .state-msg { text-align: center; padding: 50px 20px; color: var(--text-light); }
+    .state-msg .icon { font-size: 44px; margin-bottom: 12px; opacity: 0.5; }
+    .state-msg h3 { font-size: 16px; color: var(--text); margin-bottom: 6px; }
+    .state-msg p { font-size: 13px; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>ベースプラン 事例検索</h1>
+  <p>ベースプランを選ぶと、過去の施工事例・追加オプション・金額が一覧で確認できます</p>
+</div>
+
+<div class="container">
+  <div class="plan-selector">
+    <div class="plan-type-row">
+      <div class="type-divider"><span>平屋プラン</span></div>
+      <div class="plan-chips" id="hirayaChips"></div>
+    </div>
+    <div class="plan-type-row">
+      <div class="type-divider"><span>二階建てプラン</span></div>
+      <div class="plan-chips" id="nikaiChips"></div>
+    </div>
+  </div>
+
+  <div class="selected-plan-header" id="planHeader">
+    <div class="plan-title-area">
+      <span class="plan-type-badge" id="planTypeBadge"></span>
+      <h2 id="planTitleText"></h2>
+    </div>
+    <div class="plan-stats">
+      <div class="plan-stat">
+        <div class="plan-stat-num" id="planCaseCount">0</div>
+        <div class="plan-stat-label">事例数</div>
+      </div>
+      <div class="plan-stat">
+        <div class="plan-stat-num" id="planStyleCount">0</div>
+        <div class="plan-stat-label">スタイル</div>
+      </div>
+      <div class="plan-stat">
+        <div class="plan-stat-num" id="planOptionCount">0</div>
+        <div class="plan-stat-label">パターン</div>
+      </div>
+      <div class="plan-base-price">
+        <div class="price-label">ベースプラン価格</div>
+        <div class="price-value" id="planBasePrice"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option-filter-bar" id="optionFilterBar">
+    <div class="filter-label">追加オプション（帖数）で絞り込み</div>
+    <div class="option-chips" id="optionChips">
+      <div class="option-chip active" data-val="" onclick="toggleOptionFilter(this)">すべて</div>
+      <div class="option-chip" data-val="3" onclick="toggleOptionFilter(this)">3帖</div>
+      <div class="option-chip" data-val="4" onclick="toggleOptionFilter(this)">4帖</div>
+      <div class="option-chip" data-val="4.5" onclick="toggleOptionFilter(this)">4.5帖</div>
+      <div class="option-chip" data-val="6" onclick="toggleOptionFilter(this)">6帖</div>
+      <div class="option-chip" data-val="8" onclick="toggleOptionFilter(this)">8帖</div>
+      <div class="option-chip" data-val="none" onclick="toggleOptionFilter(this)">オプションなし</div>
+    </div>
+    <div class="filter-label" style="margin-top:10px;">スタイルで絞り込み</div>
+    <div class="style-chips" id="styleChips">
+      <div class="style-chip active" data-style="" onclick="toggleStyleFilter(this)" style="color:var(--text);border-color:var(--border);">すべて</div>
+      <div class="style-chip" data-style="COZY" onclick="toggleStyleFilter(this)">COZY</div>
+      <div class="style-chip" data-style="LOHAS" onclick="toggleStyleFilter(this)">LOHAS</div>
+      <div class="style-chip" data-style="NERO" onclick="toggleStyleFilter(this)">NERO</div>
+      <div class="style-chip" data-style="VILLA" onclick="toggleStyleFilter(this)">VILLA</div>
+    </div>
+  </div>
+
+  <div class="results-count" id="resultsCount" style="display:none;"></div>
+  <div id="results">
+    <div class="state-msg">
+      <div class="icon">&#x1F3E0;</div>
+      <h3>ベースプランを選択してください</h3>
+      <p>上のプランをクリックすると、そのプランの過去の施工事例が表示されます</p>
+    </div>
+  </div>
+</div>
+
+<script>
+const PDF_VIEW = id => `https://drive.google.com/file/d/${id}/view`;
+const DRIVE_BASE = 'https://drive.google.com/drive/u/0/folders/1vRvAz_7B6ptGssiqJwojeXU_XJkoaj13';
+
+// ===== PRICING =====
+const basePriceMap = {
+  '1_24坪': 21180000,
+  '1_25坪': 21630000,
+  '1_26坪': 22080000,
+  '1_28坪': 22990000,
+  '2_24.5坪': 19590000,
+  '2_25坪': 19910000,
+  '2_30坪': 21720000,
+  '2_31.5坪': 22270000,
+  '2_32坪': 22500000,
+};
+
+const optionPriceMap = {
+  2: 500000,
+  3: 750000,
+  4: 1000000,
+  4.5: 1120000,
+  6: 1490000,
+  8: 1990000,
+};
+
+function getBasePrice(floors, size) {
+  return basePriceMap[floors + '_' + size] || 0;
+}
+
+function parseOptions(option) {
+  if (!option || option === 'なし') return [];
+  const results = [];
+  const parts = option.split('/').map(s => s.trim());
+  for (const p of parts) {
+    const m = p.match(/([\d.]+)畳.*?×(\d+)/);
+    if (m) {
+      results.push({ jou: parseFloat(m[1]), count: parseInt(m[2]) });
+    }
+  }
+  return results;
+}
+
+function calcOptionPrice(option) {
+  const opts = parseOptions(option);
+  let total = 0;
+  for (const o of opts) {
+    const unitPrice = optionPriceMap[o.jou] || 0;
+    total += unitPrice * o.count;
+  }
+  return total;
+}
+
+function formatYen(n) {
+  return n.toLocaleString('ja-JP') + '円';
+}
+
+function formatYenShort(n) {
+  if (n >= 10000) {
+    const man = n / 10000;
+    return man.toLocaleString('ja-JP') + '万円';
+  }
+  return formatYen(n);
+}
+
+// ===== PDF MAP =====
+const pdfMap = {
+  '中西智也': { heimen: '1JZp8olkeBhBgvSVDxV0B1506KOCR0-q1', ritumen: '1uGwfjpJQZ09ebOdc_XOMUCXqD64p_hN2' },
+  '佐藤藍太': { heimen: '1knhZtXWO1yfZ6OiboAbJcn-XcN_clnx8', ritumen: '1Cespuxl8qRpw4Cs_oELcr2feMTJAkZHy' },
+  '丸尾星也': { heimen: '1yYR9YtqhdhMgzHWvD2SDoYbx2EultKIL', ritumen: '1-npsFoxft8AkYRMwdZ6IIXOKYOwTdREY' },
+  '内山雄太': { heimen: '1nw2Mi8B2a5zO26KvdMvAQjcl9FDB8-uC', ritumen: '1mGvf5Z0MdTVEVj16_DumJGN-4wR-HNBR' },
+  '内田純平': { heimen: '1ON_8nmoYkrDeAAmoUjk3Ibot0hpsbq6S', ritumen: '1qUd5LSgBkcWmfoGYpmzuR3-yKqeN8Tvq' },
+  '加藤卓巳': { heimen: '16qjfna7f4IblqtDTxwWxlLdmzYWijgqS', ritumen: '1LZPxenuwRPbxHIBwTl90h-TapKJEYw3Q' },
+  '加野貴裕': { heimen: '1fGAhJB622kHrcZtTgAhPd8xzaZ2BJbtu', ritumen: '1Q7FFdPFgUpLEpbvrqFwYa1xaBWZUuqU4' },
+  '合浦航': { heimen: '1u0r-rDILhv4kmblSfEGc-DwT6S3Q3xMS', ritumen: '1E14f1lFC1ntQyH7JzfoutFEgWIT3v4Xo' },
+  '吉村基': { heimen: '15sHpRjNrBN8ENqa1PAhP27bKzKvNMoCI', ritumen: '1sG0DGAxds8S_OackjevwyOJTRhbRGfMY' },
+  '大庭圭太郎': { heimen: '19PhuN7mLDFy15dmPV6CYzyoJS_jyxl6t', ritumen: '12HkFppuY3HTF01wnqnWhoOGVuIlUNkb-' },
+  '大角健斗': { heimen: '1yVXTBO-L0t-mMgU093SuegNDNkKNoKVC', ritumen: '1OX4VY5HdvEvC5DTGfSRX6ZU-jZQ36Vhg' },
+  '妙玄翔太': { heimen: '1geQaVRqE-wzPFAntC2i3kxppeCll4ZzC', ritumen: '126lOJ9Mpy1NpMexht5RDR7xyEq_MPsjz' },
+  '宮野祐輔': { heimen: '1YAEi3hl4fddzfr1cLWiz8OrCNLtE2xBr', ritumen: '1ocNzUvlss_A1JbgN_1K6ZGGPJ5I_LPYV' },
+  '山下慶輝': { heimen: '1kj41VIdBkTPR6W37AWdALOCAHT59NFef', ritumen: '1BYXIIQqp4MtLVRHvLDn-ZeUzEK_B1BX1' },
+  '山本真': { heimen: '1xq0iWfJBslzRwBu_N5tYl6-HnuUqB4XZ', ritumen: '1QmzHdzMAXD78UrKPK4CAQGYik0-Wll8Z' },
+  '岡﨑恵美': { heimen: '18ULg4vH1WvOsdmD8g8wMKCFr1eGRtJ9r', ritumen: '1tzs6Wx9pfnVYbU_cduLSiYT_LSJCrl2r' },
+  '市川真紀': { heimen: '1ijid1LvbP2qGGe7LXU34JflXCcXaB-oT', ritumen: '1eztNgBwXPjlhoo2JfFBg38q2Mj0GvsYT' },
+  '平井智之': { heimen: '1LmcWrDPGsyWhSRpA0XDA6a9uTYR3G1JS', ritumen: '1MMBgOU6nwtK6l1qUvp_YQoleFKFxAqa2' },
+  '戸田将史': { heimen: '1ZJXZaC48BRKMPLBkXI3fllPgwkQo-y40', ritumen: '1VREwD2j0HEIU0MHaC-kEwxyQt5hNfTH_' },
+  '方森光希': { heimen: '1rubYdFnlag6lHF2KTd-P6C8g6utKXxes', ritumen: '1LzBcKqRy3tSMyF1AN7DNhR14jew6M166' },
+  '朝倉真勇人': { heimen: '1MTXDza5Z7SNcpfx1T18Beg1DzLXslzzj', ritumen: '1m-DYgLHi4_hMVv6LaOXlt2xu1xjfa8Br' },
+  '村松協子': { heimen: '1fQuUuatX-eIOGDaTUWaFDMx-QkM0NGuV', ritumen: '1lf6uSwwaQ0sBeu4homb_kbofbiHoyg-C' },
+  '松下稜': { heimen: '1bj-PQX8ZYVc8Z0FROW1hh6EEBdr0EByF', ritumen: '1i0M7MO_qZXBD3xDPg8SPov7dxnePHhH9' },
+  '松坂雅樹': { heimen: '1wM290xFeBKT2SO6gCwAOo6xm5BfTJZD4', ritumen: '1VlR4X5OFs5f80yZulI3nUn6YzoxMCo_j' },
+  '松村明彦': { heimen: '1hevzKCBUrMellmquTbt_v7d9smu-esWz', ritumen: '1BjebB4MCFulCaa681AcSqfPcmKePlqq0' },
+  '林紘希': { heimen: '17uZKZglBIRTgk3IJft9exRtxAnadw8df', ritumen: '1EydIbr8Fuc-O3CmnCGNbcqVC-6mkDEx0' },
+  '柴田素基': { heimen: '1Fi5HnqTEUL7ifkdmkR7vAyxrljDe3gsq', ritumen: '1pEhhZ4_m-zkp49b5qDik7-J_uzzlMVro' },
+  '森下順貴': { heimen: '1NP9eCu0JsmzhFOwj3jGLQnOPIiB03FyU', ritumen: '1a50PGjUrlvMI2v7g-zCYOxC18335_i3W' },
+  '樋口恭兵': { heimen: '1HgrQEtQ7fo544UWoDX037DgPEjDxorNl', ritumen: '12sCm9xUiHqaOugKifiywYhUOe_DxkHjb' },
+  '池田大樹': { heimen: '1eTTWV7DCFB072g-vNVrFPDXbKVEGa2ih', ritumen: '1-tC-6a1r2R_EuOCoXNBsJxfAw53GHzsM' },
+  '清水大輔': { heimen: '1irwYRveQ0E1PF9IjWFNjuoC7rPSj27rX', ritumen: '1U8pt9uYgj7RTTHU7rJOanygyGGWgyB_Z' },
+  '潟山裕太': { heimen: '1gzsRwVsO9ZwNZuswoMwGNRwM1jP6RJ88', ritumen: '1VZG4xoUgkJ5CgsWK04DAngy0L2oC8hjs' },
+  '牧野稜': { heimen: '12wJOmQ8ycPROoOlAvKMAGO1_gnvz6hTp', ritumen: '1bHnQdo0uHJMDKEVN4ZKNlCtjNK--SLgt' },
+  '白鳥晃希': { heimen: '1uS6pZiYsEv2Ey3uHX8O09yc2sZvL5AI-', ritumen: '1HC_3Lb7xEg6V7S5LA-iwEi1o5EV-KrvK' },
+  '福田祐亮': { heimen: '1etwb92iI7giG3q52LihoShliRPiAisim', ritumen: '1_zFFs6s1mjKtpH2IOCM57ZpH0qy4pt0s' },
+  '菊池和貴': { heimen: '1s023rdqBrLLQW3OqJ0hi-H3J7wQkionY', ritumen: '1E9RJFFkILhLc0YuiRWJmo__zdNEBjqnU' },
+  '萩原誠': { heimen: '1uEYFwos-_7AZltb6uHco5pDU94Z_8EKX', ritumen: '1AzBsmv_aDfrAQ2zX48PXa7_iMu-HjuFt' },
+  '藤田智伊': { heimen: '10Xl2B0WOqN_XDICFvTsKhCt8q1e9y0qr', ritumen: '1kieZNbHKLkgiMZne2AvIGsM96NQjfHcY' },
+  '野村紀真': { heimen: '1C7wWOCzT334EycpY-aWGuwnpQBdqJqXA', ritumen: '1mYh7m2Lx9KaNIDk5S0Tp6knMb9M3hyAe' },
+  '金森勇人': { heimen: '1iQNdozRfEQnnBvxx8knKAI9cI-K7smmM', ritumen: '1y3EezmPk4OkKYEaGCJbmJySPfyNt7FY8' },
+  '鈴木宏太': { heimen: '1vzdm3qUU8vW-i_7aikAgxCDNbOqgqd4G', ritumen: '1o1wxJubMWHRHsKzRJ8UW4qeEwBFH--E-' },
+  '鈴木明人': { heimen: '15pu4J5ozYvDL_CtEkxNMve-Vk8d28xvJ', ritumen: '1GuqSMiZnr8lw9mBWhAJmCuznST4K9O7S' },
+  '鈴木晋太郎': { heimen: '1ly6ZtZAA-nc1yXFbwnc3FMCb5JnwS0tF', ritumen: '1w5UGvaaZYnta3cUVKztKLXeYoxnyoI0e' },
+  '鈴木達也': { heimen: '1--MBeNfJDkdJwazPFKsfapuIvfDMhYfG', ritumen: '1e_oPhueUMfNGVuSv3lAoZL1hO0XH1I45' },
+  '鎌田真一': { heimen: '1oht45qWYStMXVZzvsd_lGpjk1mQINN7L', ritumen: '1nDfqRrue-vsJ9O1BDPptvFfcdf0UghFM' },
+  '風間淳機': { heimen: '1GiBcumbLs9lBmCQrP9cQDGVUsFlUXXVe', ritumen: '1lw_Cs9nSrNBA-ZseO96fxoN4gHCE5PhD' },
+  '髙山輝彦': { heimen: '1tM_7s_HRWMSDW49psvOj5-WUQJPSGAuL', ritumen: '1udMNxIbPlwE3H85GOTlL8nr2Jsv9gvoK' },
+  '髙木秀一郎': { heimen: '1tUaL8iiT6PYZBEcWhgkB4nz0mSkSe7OE', ritumen: '1m_dHskfhAhL2WCnzI00MEd2ZOuj4S5kT' },
+};
+
+const folderMap = {
+  '黒柳雄介': '1iPM2cDd2CFzKe7EvVXekpet_99gX393X',
+  '神馬孝俊': '1wPjqwlYEfQS9BwWIhJwmFJRNVJDc0Gwn',
+  '谷髙拓馬': '18scpDSgLAU4yAX9SqsAJh9OYz24aUlBC',
+  '那須元樹': '1AYguxqQzBmd5a0m5DZNEkYXBjWn0fmH5',
+};
+
+function baseName(name) {
+  return name.replace(/様$/, '').replace(/\s+/g, '').replace(/　/g, '');
+}
+
+function parseOptionCategories(option) {
+  if (!option || option === 'なし') return [];
+  const cats = new Set();
+  const matches = option.matchAll(/([\d.]+)畳/g);
+  for (const m of matches) {
+    const num = parseFloat(m[1]);
+    if ([3, 4, 4.5, 6, 8].includes(num)) cats.add(num);
+  }
+  return [...cats];
+}
+
+// ===== DATA =====
+const buildingData = [
+  { name: '栗原孝悠様', size: '30坪', floors: 2, option: '4.5畳×2', style: 'COZY' },
+  { name: '但田真吾様', size: '24坪', floors: 1, option: '3畳×1', style: 'LOHAS' },
+  { name: '坂信幸様', size: '24.5坪', floors: 2, option: 'なし', style: 'NERO' },
+  { name: '那須田昌樹様', size: '31.5坪', floors: 2, option: 'なし', style: 'NERO' },
+  { name: '村上集哉様', size: '32坪', floors: 2, option: '6畳×1', style: 'VILLA' },
+  { name: '堀内昴様', size: '30坪', floors: 2, option: '4畳×1', style: 'VILLA' },
+  { name: '中道隆久様', size: '25坪', floors: 1, option: 'なし', style: 'VILLA' },
+  { name: '石上紘介様', size: '32坪', floors: 2, option: 'なし', style: 'NERO' },
+  { name: '大淵謙一様', size: '31.5坪', floors: 2, option: '3畳×1 / 4畳×1', style: 'NERO' },
+  { name: '小瀬木優登', size: '24坪', floors: 1, option: '3畳×1 / 6畳×1', style: 'LOHAS' },
+  { name: '渥美知也', size: '30坪', floors: 2, option: '4畳×1', style: 'VILLA' },
+  { name: '福田祐亮様', size: '25坪', floors: 1, option: '4畳×1', style: 'LOHAS' },
+  { name: '黒柳雄介様', size: '32坪', floors: 2, option: '4畳(2階)×1', style: 'NERO' },
+  { name: '神馬孝俊様', size: '24.5坪', floors: 2, option: '6畳×1 / 8畳×1', style: 'LOHAS' },
+  { name: '松下稜様', size: '28坪', floors: 1, option: '3畳×1 / 4畳×1', style: 'LOHAS' },
+  { name: '那須元樹様', size: '28坪', floors: 1, option: '3畳×1', style: 'LOHAS' },
+  { name: '大角健斗様', size: '24坪', floors: 1, option: '3畳×1', style: 'LOHAS' },
+  { name: '谷髙拓馬様', size: '25坪', floors: 1, option: '4畳×1 / 6畳×1', style: 'VILLA' },
+  { name: '内山雄太様', size: '28坪', floors: 1, option: '4畳×2', style: 'NERO' },
+  { name: '風間淳機様', size: '31.5坪', floors: 2, option: '4畳×2', style: 'VILLA' },
+  { name: '萩原誠様', size: '28坪', floors: 1, option: 'なし', style: 'NERO' },
+  { name: '菊池和貴様', size: '24.5坪', floors: 2, option: '6畳×1 / 8畳×1', style: 'VILLA' },
+  { name: '髙山輝彦様', size: '24坪', floors: 1, option: 'なし', style: 'LOHAS' },
+  { name: '牧野稜様', size: '31.5坪', floors: 2, option: '3畳×1 / 4畳×1', style: 'VILLA' },
+  { name: '戸田将史様', size: '26坪', floors: 1, option: '4畳×1 / 8畳×1', style: 'LOHAS' },
+  { name: '潟山裕太様', size: '25坪', floors: 2, option: '6畳×1 / 8畳×1', style: 'VILLA' },
+  { name: '髙木秀一郎様', size: '25坪', floors: 1, option: '4.5畳×2', style: 'NERO' },
+  { name: '内田純平様', size: '30坪', floors: 2, option: '4畳×2', style: 'COZY' },
+  { name: '岡﨑恵美様', size: '24坪', floors: 1, option: 'なし', style: 'LOHAS' },
+  { name: '宮野祐輔様', size: '30坪', floors: 2, option: '3畳×1 / 4畳×1', style: 'VILLA' },
+  { name: '朝倉真勇人様', size: '24坪', floors: 1, option: '3畳×2', style: 'NERO' },
+  { name: '林紘希様', size: '32坪', floors: 2, option: '4畳×1', style: 'LOHAS' },
+  { name: '白鳥晃希様', size: '26坪', floors: 1, option: '4畳×1 / 8畳×1', style: 'VILLA' },
+  { name: '山本　真様', size: '24坪', floors: 1, option: 'なし', style: 'LOHAS' },
+  { name: '森下順貴様', size: '24坪', floors: 1, option: '6畳×1 / 8畳×1', style: 'LOHAS' },
+  { name: '大庭圭太郎様', size: '32坪', floors: 2, option: 'なし', style: 'LOHAS' },
+  { name: '鎌田真一様', size: '24坪', floors: 1, option: '8畳×1', style: 'VILLA' },
+  { name: '市川真紀様', size: '24坪', floors: 1, option: '4畳×2', style: 'VILLA' },
+  { name: '松坂雅樹様', size: '24坪', floors: 1, option: '3畳×1 / 8畳×1', style: 'LOHAS' },
+  { name: '鈴木晋太郎様', size: '24.5坪', floors: 2, option: '6畳×1 / 8畳×1', style: 'VILLA' },
+  { name: '柴田素基様', size: '32坪', floors: 2, option: '4畳×2', style: 'VILLA' },
+  { name: '加藤卓巳様', size: '24.5坪', floors: 2, option: '6畳×1 / 8畳×1', style: 'COZY' },
+  { name: '野村紀真様', size: '26坪', floors: 1, option: '6畳×1', style: 'LOHAS' },
+  { name: '妙玄翔太様', size: '25坪', floors: 1, option: '6畳×2', style: 'VILLA' },
+  { name: '平井智之様', size: '24坪', floors: 1, option: '6畳×1', style: 'LOHAS' },
+  { name: '松村明彦', size: '25坪', floors: 1, option: '3畳×1 / 6畳×1', style: 'LOHAS' },
+  { name: '鈴木宏太', size: '32坪', floors: 2, option: '4畳×2', style: 'VILLA' },
+  { name: '村松協子', size: '24坪', floors: 1, option: 'なし', style: 'VILLA' },
+  { name: '方森光希', size: '30坪', floors: 2, option: '4.5畳×1 / 6畳×1', style: 'VILLA' },
+  { name: '樋口恭兵', size: '25坪', floors: 1, option: 'なし', style: 'NERO' },
+  { name: '池田大樹', size: '25坪', floors: 2, option: '8畳×2', style: 'COZY' },
+  { name: '吉村基', size: '31.5坪', floors: 2, option: 'なし', style: 'VILLA' },
+  { name: '鈴木明人', size: '24坪', floors: 1, option: '4畳×2', style: 'NERO' },
+  { name: '清水大輔', size: '26坪', floors: 1, option: '4.5畳×1', style: 'LOHAS' },
+  { name: '山下慶輝', size: '24坪', floors: 1, option: '8畳×1', style: 'VILLA' },
+  { name: '金森勇人', size: '25坪', floors: 1, option: '6畳×1', style: 'NERO' },
+  { name: '加野貴裕', size: '25坪', floors: 1, option: '3畳×1 / 4畳×1', style: 'LOHAS' },
+  { name: '合浦航', size: '31.5坪', floors: 2, option: '3畳×1 / 4畳×1', style: 'VILLA' },
+  { name: '丸尾星也', size: '30坪', floors: 2, option: '6畳×1', style: 'COZY' },
+  { name: '中西智也', size: '25坪', floors: 2, option: '8畳×2', style: 'LOHAS' },
+  { name: '佐藤藍太', size: '30坪', floors: 2, option: '3畳×1 / 4畳×1', style: 'VILLA' },
+  { name: '藤田智伊', size: '31.5坪', floors: 2, option: 'なし', style: 'VILLA' },
+  { name: '鈴木達也', size: '31.5坪', floors: 2, option: '6畳×1', style: 'NERO' },
+];
+
+buildingData.forEach(d => { d.optionCats = parseOptionCategories(d.option); });
+
+const basePlans = [
+  { type: '平屋', size: '24坪', floors: 1 },
+  { type: '平屋', size: '25坪', floors: 1 },
+  { type: '平屋', size: '26坪', floors: 1 },
+  { type: '平屋', size: '28坪', floors: 1 },
+  { type: '二階建て', size: '24.5坪', floors: 2 },
+  { type: '二階建て', size: '25坪', floors: 2 },
+  { type: '二階建て', size: '30坪', floors: 2 },
+  { type: '二階建て', size: '31.5坪', floors: 2 },
+  { type: '二階建て', size: '32坪', floors: 2 },
+];
+
+let currentPlan = null;
+let currentOptionFilter = '';
+let currentStyleFilter = '';
+
+function init() {
+  const hirayaEl = document.getElementById('hirayaChips');
+  const nikaiEl = document.getElementById('nikaiChips');
+
+  basePlans.forEach(bp => {
+    const count = buildingData.filter(d => d.size === bp.size && d.floors === bp.floors).length;
+    const price = getBasePrice(bp.floors, bp.size);
+    const chip = document.createElement('div');
+    chip.className = 'plan-chip';
+    chip.innerHTML = `
+      <div class="chip-main">${bp.size} <span class="chip-count">${count}件</span></div>
+      <div class="chip-price">${formatYenShort(price)}</div>`;
+    chip.onclick = () => selectPlan(bp, chip);
+    if (bp.type === '平屋') hirayaEl.appendChild(chip);
+    else nikaiEl.appendChild(chip);
+  });
+}
+
+function selectPlan(bp, chipEl) {
+  currentOptionFilter = '';
+  currentStyleFilter = '';
+  document.querySelectorAll('.option-chip').forEach(c => c.classList.toggle('active', c.dataset.val === ''));
+  document.querySelectorAll('.style-chip').forEach(c => c.classList.toggle('active', c.dataset.style === ''));
+  document.querySelectorAll('.plan-chip').forEach(c => c.classList.remove('active-hiraya', 'active-2f'));
+  chipEl.classList.add(bp.type === '平屋' ? 'active-hiraya' : 'active-2f');
+
+  currentPlan = bp;
+
+  const header = document.getElementById('planHeader');
+  header.classList.add('visible');
+  const badge = document.getElementById('planTypeBadge');
+  badge.textContent = bp.type;
+  badge.className = 'plan-type-badge ' + (bp.type === '平屋' ? 'hiraya' : 'nikai');
+  document.getElementById('planTitleText').textContent = bp.size + ' プラン';
+
+  const basePrice = getBasePrice(bp.floors, bp.size);
+  document.getElementById('planBasePrice').textContent = formatYenShort(basePrice);
+
+  const cases = buildingData.filter(d => d.size === bp.size && d.floors === bp.floors);
+  document.getElementById('planCaseCount').textContent = cases.length;
+  document.getElementById('planStyleCount').textContent = new Set(cases.map(d => d.style)).size;
+  document.getElementById('planOptionCount').textContent = new Set(cases.map(d => d.option)).size;
+
+  document.getElementById('optionFilterBar').classList.add('visible');
+  renderResults();
+}
+
+function toggleOptionFilter(el) {
+  document.querySelectorAll('.option-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  currentOptionFilter = el.dataset.val;
+  renderResults();
+}
+
+function toggleStyleFilter(el) {
+  document.querySelectorAll('.style-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  currentStyleFilter = el.dataset.style;
+  renderResults();
+}
+
+function renderResults() {
+  if (!currentPlan) return;
+
+  let data = buildingData.filter(d => d.size === currentPlan.size && d.floors === currentPlan.floors);
+  if (currentOptionFilter === 'none') {
+    data = data.filter(d => d.optionCats.length === 0);
+  } else if (currentOptionFilter) {
+    const num = parseFloat(currentOptionFilter);
+    data = data.filter(d => d.optionCats.includes(num));
+  }
+  if (currentStyleFilter) data = data.filter(d => d.style === currentStyleFilter);
+
+  const countEl = document.getElementById('resultsCount');
+  countEl.style.display = 'block';
+  countEl.innerHTML = `該当事例: <strong>${data.length}</strong> 件`;
+
+  const container = document.getElementById('results');
+  if (data.length === 0) {
+    container.innerHTML = `<div class="state-msg"><div class="icon">&#x1F50D;</div><h3>該当する事例がありません</h3><p>フィルター条件を変更してお試しください</p></div>`;
+    return;
+  }
+
+  const svgPdf = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
+  const svgFolder = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>';
+
+  const basePrice = getBasePrice(currentPlan.floors, currentPlan.size);
+
+  let html = '<div class="results-grid">';
+  data.forEach(item => {
+    const key = baseName(item.name);
+    const pdfs = pdfMap[key];
+    const fid = folderMap[key];
+
+    let buttons;
+    if (pdfs) {
+      buttons = `<div class="pdf-row">
+        <a class="btn-pdf heimen" href="${PDF_VIEW(pdfs.heimen)}" target="_blank">${svgPdf} 平面図</a>
+        <a class="btn-pdf ritumen" href="${PDF_VIEW(pdfs.ritumen)}" target="_blank">${svgPdf} 立面図</a>
+      </div>`;
+    } else if (fid) {
+      buttons = `<a class="btn-folder" href="https://drive.google.com/drive/u/0/folders/${fid}" target="_blank">${svgFolder} 図面フォルダを開く</a>`;
+    } else {
+      buttons = `<a class="btn-folder" href="${DRIVE_BASE}" target="_blank">${svgFolder} 図面一覧を開く</a>`;
+    }
+
+    let optionHtml;
+    if (!item.option || item.option === 'なし') {
+      optionHtml = '<span class="option-none">追加オプションなし（ベースプランのみ）</span>';
+    } else {
+      optionHtml = item.option.split(' / ').map(o =>
+        `<span class="option-room"><span class="plus">+</span>${esc(o)}</span>`
+      ).join('');
+    }
+
+    // Price calculation
+    const optPrice = calcOptionPrice(item.option);
+    const totalPrice = basePrice + optPrice;
+    const opts = parseOptions(item.option);
+
+    let priceHtml = '<div class="card-price-section">';
+    priceHtml += `<div class="price-row"><span>ベースプラン（${esc(currentPlan.size)}）</span><span class="price-val">${formatYen(basePrice)}</span></div>`;
+    if (opts.length > 0) {
+      for (const o of opts) {
+        const up = optionPriceMap[o.jou] || 0;
+        const label = o.count > 1 ? `${o.jou}帖 × ${o.count}` : `${o.jou}帖`;
+        priceHtml += `<div class="price-row option-price"><span>+ ${label}</span><span class="price-val">+${formatYen(up * o.count)}</span></div>`;
+      }
+    }
+    priceHtml += '<div class="price-divider"></div>';
+    priceHtml += `<div class="price-row total"><span>合計金額</span><span class="price-val">${formatYen(totalPrice)}</span></div>`;
+    priceHtml += '</div>';
+
+    html += `
+      <div class="result-card">
+        <div class="card-top style-${item.style}">
+          <span class="card-customer">${esc(item.name)}</span>
+          <div class="card-badges"><span class="style-badge ${item.style}">${item.style}</span></div>
+        </div>
+        <div class="card-body">
+          <div class="card-option-section">
+            <div class="card-option-label base">ベース + 追加オプション</div>
+            <div class="option-visual">${optionHtml}</div>
+          </div>
+          ${priceHtml}
+          ${buttons}
+        </div>
+      </div>`;
+  });
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+function esc(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>&Livin キッチン検索ツール</title>
+<style>
+  :root {
+    --bg: #f5f4f0;
+    --white: #ffffff;
+    --border: #e0ddd6;
+    --text: #2c2c2c;
+    --text-sub: #888;
+    --accent: #3a5a40;
+    --accent-light: #e8f0e9;
+    --tag-bg: #f0ede8;
+    --shadow: 0 2px 8px rgba(0,0,0,0.07);
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; }
+
+  /* Header */
+  .header { background: var(--accent); color: white; padding: 14px 24px; display: flex; align-items: center; gap: 16px; box-shadow: 0 2px 6px rgba(0,0,0,0.15); position: sticky; top: 0; z-index: 100; }
+  .header h1 { font-size: 17px; font-weight: 700; letter-spacing: 0.05em; }
+  .header .subtitle { font-size: 11px; opacity: 0.75; }
+  .search-wrap { margin-left: auto; position: relative; }
+  .search-wrap input { width: 220px; padding: 7px 14px 7px 34px; border: none; border-radius: 20px; background: rgba(255,255,255,0.2); color: white; font-size: 13px; outline: none; }
+  .search-wrap input::placeholder { color: rgba(255,255,255,0.65); }
+  .search-wrap::before { content: "🔍"; position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 13px; }
+  .result-count { background: rgba(255,255,255,0.2); border-radius: 12px; padding: 3px 10px; font-size: 12px; white-space: nowrap; }
+
+  /* Layout */
+  .layout { display: flex; gap: 0; min-height: calc(100vh - 53px); }
+
+  /* Sidebar */
+  .sidebar { width: 220px; flex-shrink: 0; background: var(--white); border-right: 1px solid var(--border); padding: 16px 14px; overflow-y: auto; position: sticky; top: 53px; height: calc(100vh - 53px); }
+  .filter-group { margin-bottom: 18px; }
+  .filter-group h3 { font-size: 11px; font-weight: 700; color: var(--text-sub); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; padding-bottom: 5px; border-bottom: 1px solid var(--border); }
+  .filter-btn { display: block; width: 100%; text-align: left; padding: 5px 9px; margin-bottom: 3px; border: 1px solid var(--border); border-radius: 6px; background: var(--white); color: var(--text); font-size: 12px; cursor: pointer; transition: all 0.15s; }
+  .filter-btn:hover { background: var(--tag-bg); border-color: #ccc; }
+  .filter-btn.active { background: var(--accent-light); border-color: var(--accent); color: var(--accent); font-weight: 600; }
+  .filter-btn .count { float: right; color: var(--text-sub); font-size: 11px; }
+  .filter-btn.active .count { color: var(--accent); opacity: 0.7; }
+  .clear-btn { display: block; width: 100%; padding: 7px; background: #f5e9e9; border: 1px solid #e0b0b0; border-radius: 6px; color: #c0392b; font-size: 12px; cursor: pointer; text-align: center; font-weight: 600; margin-top: 4px; }
+  .clear-btn:hover { background: #f0d5d5; }
+
+  .color-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.15); margin-right: 5px; vertical-align: middle; flex-shrink: 0; }
+
+  /* Main content */
+  .main { flex: 1; padding: 16px 18px; overflow-y: auto; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+
+  /* Cards */
+  .card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 15px; box-shadow: var(--shadow); transition: box-shadow 0.2s, transform 0.15s; cursor: default; position: relative; }
+  .card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.12); transform: translateY(-1px); }
+  .card-header { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 10px; }
+  .card-name { font-size: 15px; font-weight: 700; flex: 1; }
+  .style-tag { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; letter-spacing: 0.05em; white-space: nowrap; }
+  .style-COZY  { background: #fde8d8; color: #c0522a; }
+  .style-LOHAS { background: #d8f0de; color: #2a7a40; }
+  .style-NERO  { background: #e0e0e0; color: #333; }
+  .style-VILLA { background: #dde8f8; color: #2a4a8a; }
+
+  .info-row { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; flex-wrap: wrap; }
+  .label { font-size: 10px; color: var(--text-sub); background: var(--tag-bg); padding: 1px 6px; border-radius: 4px; white-space: nowrap; }
+
+  .kitchen-block { background: var(--bg); border-radius: 8px; padding: 9px 11px; margin: 8px 0; }
+  .kitchen-maker { font-size: 11px; color: var(--text-sub); margin-bottom: 3px; }
+  .kitchen-name { font-size: 13px; font-weight: 700; margin-bottom: 5px; line-height: 1.4; }
+  .kitchen-price { font-size: 12px; color: #555; }
+
+  .color-row { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
+  .color-chip { width: 22px; height: 22px; border-radius: 50%; border: 2px solid rgba(0,0,0,0.12); flex-shrink: 0; }
+  .color-name { font-size: 12px; font-weight: 600; }
+
+  .detail-row { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); }
+  .detail-tag { font-size: 11px; background: var(--tag-bg); border-radius: 4px; padding: 2px 7px; color: #555; }
+  .detail-tag.has-value { background: #e8f0e9; color: #2a5a30; }
+  .detail-tag.price-tag { background: #fdf6e8; color: #7a5a10; }
+
+  /* No results */
+  .no-results { text-align: center; color: var(--text-sub); padding: 60px 20px; grid-column: 1/-1; }
+  .no-results .icon { font-size: 40px; margin-bottom: 12px; }
+
+  /* Active filter chips */
+  .active-filters { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; align-items: center; }
+  .active-chip { background: var(--accent-light); border: 1px solid var(--accent); color: var(--accent); border-radius: 12px; padding: 3px 10px; font-size: 12px; display: flex; align-items: center; gap: 5px; }
+  .active-chip button { background: none; border: none; color: var(--accent); cursor: pointer; font-size: 13px; padding: 0; line-height: 1; }
+
+  /* PDF buttons */
+  .pdf-links { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); }
+  .pdf-btn { display: inline-flex; align-items: center; gap: 4px; padding: 4px 9px; border-radius: 6px; font-size: 11px; font-weight: 600; text-decoration: none; cursor: pointer; transition: all 0.15s; }
+  .pdf-btn-plan { background: #e8eeff; color: #2a44a0; border: 1px solid #b8c8f0; }
+  .pdf-btn-plan:hover { background: #d0daff; }
+  .pdf-btn-storage { background: #fff0e0; color: #a06020; border: 1px solid #f0d0a0; }
+  .pdf-btn-storage:hover { background: #ffe0c0; }
+
+  @media (max-width: 640px) {
+    .sidebar { display: none; }
+    .grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="header h1">&amp;Livin キッチン検索</div>
+    <div class="subtitle">お客様キッチン一覧</div>
+  </div>
+  <div class="result-count" id="countBadge">0 件</div>
+  <div class="search-wrap">
+    <input type="text" id="searchInput" placeholder="お客様名を検索..." oninput="applyFilters()">
+  </div>
+</div>
+
+<div class="layout">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="filter-group">
+      <h3>キッチンメーカー</h3>
+      <div id="makerFilters"></div>
+    </div>
+    <div class="filter-group">
+      <h3>型</h3>
+      <div id="typeFilters"></div>
+    </div>
+    <div class="filter-group">
+      <h3>扉カラー</h3>
+      <div id="colorFilters"></div>
+    </div>
+    <div class="filter-group">
+      <h3>内装スタイル</h3>
+      <div id="styleFilters"></div>
+    </div>
+    <div class="filter-group">
+      <h3>建物サイズ</h3>
+      <div id="sizeFilters"></div>
+    </div>
+    <div class="filter-group">
+      <h3>オプション</h3>
+      <button class="filter-btn" id="btn-oneroom" onclick="toggleSpecial('oneroom')">ワンルームあり <span class="count" id="cnt-oneroom"></span></button>
+      <button class="filter-btn" id="btn-garage" onclick="toggleSpecial('garage')">ガレージあり <span class="count" id="cnt-garage"></span></button>
+    </div>
+    <button class="clear-btn" onclick="clearAll()">フィルターをすべてリセット</button>
+  </div>
+
+  <!-- Main -->
+  <div class="main">
+    <div class="active-filters" id="activeFilters"></div>
+    <div class="grid" id="grid"></div>
+  </div>
+</div>
+
+<script>
+const rawData = [{"name":"栗原孝悠様","size":"30坪","floor":"2","style":"COZY","wall":"漆喰","oneroom":"4.5帖×2","garage":"なし","kitchen":"ウッドワン","kitchenPrice":"¥947,630","color":"","backStorage":"¥307,700"},{"name":"但田真吾様","size":"24坪","floor":"1","style":"LOHAS","wall":"ＳＮＯＷ","oneroom":"3帖×1","garage":"なし","kitchen":"ES ペニンシュラ 背面吊戸棚あり","kitchenPrice":"¥523,540","color":"ソリッドホワイト","backStorage":"¥212,700"},{"name":"坂信幸様","size":"24.5坪","floor":"2","style":"NERO","wall":"AshSmoke","oneroom":"なし","garage":"なし","kitchen":"ES I型","kitchenPrice":"¥0","color":"ブラックスタッコ","backStorage":"¥101,540"},{"name":"那須田昌樹様","size":"31.5坪","floor":"2","style":"NERO","wall":"CoolBlack","oneroom":"なし","garage":"なし","kitchen":"ES I型","kitchenPrice":"¥365,540","color":"ブラックスタッコ","backStorage":"¥92,310"},{"name":"村上集哉様","size":"32坪","floor":"2","style":"VILLA","wall":"SNOW","oneroom":"6帖×1","garage":"なし","kitchen":"ES I型","kitchenPrice":"¥1,569,240","color":"グレージュスタッコ","backStorage":"¥139,080"},{"name":"堀内昴様","size":"30坪","floor":"2","style":"VILLA","wall":"Metal Gray","oneroom":"4帖×1","garage":"なし","kitchen":"リシェル ペニンシュラ","kitchenPrice":"¥923,080","color":"ブラックスタッコ","backStorage":"¥200,000"},{"name":"中道隆久様","size":"31.5坪","floor":"2","style":"VILLA","wall":"Metal Gray","oneroom":"4帖×1","garage":"なし","kitchen":"リシェル I 型","kitchenPrice":"¥1,069,390","color":"ブラックスタッコ","backStorage":"¥204,000"},{"name":"石上紘介様","size":"28坪","floor":"2","style":"VILLA","wall":"Metal Gray","oneroom":"4帖×1","garage":"なし","kitchen":"リシェル ペニンシュラ","kitchenPrice":"¥191,850","color":"ブラックスタッコ","backStorage":"¥128,310"},{"name":"大淵謙一様","size":"25坪","floor":"2","style":"LOHAS","wall":"QUAKE","oneroom":"3帖×1\n4帖×1","garage":"なし","kitchen":"ES I型","kitchenPrice":"¥194,160","color":"グレージュスタッコ","backStorage":"¥107,540"},{"name":"小瀬木優登","size":"28坪","floor":"2","style":"NERO","wall":"Metal Gray","oneroom":"6帖×1","garage":"なし","kitchen":"ES I型","kitchenPrice":"¥201,540","color":"クリエラスク","backStorage":"¥117,080"},{"name":"渥美知也","size":"30坪","floor":"2","style":"NERO","wall":"AshSmoke","oneroom":"なし","garage":"なし","kitchen":"ES ペニンシュラ 背面吊戸棚あり","kitchenPrice":"¥617,540","color":"ブラックスタッコ","backStorage":"¥215,390"},{"name":"福田祐亮様","size":"25坪","floor":"1","style":"LOHAS","wall":"SandStorm","oneroom":"4帖×1","garage":"なし","kitchen":"ES ペニンシュラ","kitchenPrice":"¥645,850","color":"グレージュスタッコ","backStorage":""},{"name":"黒柳雄介様","size":"32坪","floor":"2","style":"NERO","wall":"Metal Gray","oneroom":"4帖(2階)×1","garage":"なし","kitchen":"ES I型","kitchenPrice":"¥142,470","color":"ブラックスタッコ","backStorage":"¥121,850"},{"name":"神馬孝俊様","size":"24.5坪","floor":"2","style":"LOHAS","wall":"QUAKE","oneroom":"6帖×1\n8帖×1","garage":"なし","kitchen":"ES I型","kitchenPrice":"¥347,700","color":"ホワイトスタッコ","backStorage":"¥124,470"},{"name":"松下稜様","size":"28坪","floor":"1","style":"LOHAS","wall":"QUAKE","oneroom":"3帖×1\n4帖×1","garage":"なし","kitchen":"ES ペニンシュラ","kitchenPrice":"¥195,390","color":"ソリッドホワイト","backStorage":"¥166,600"},{"name":"那須元樹様","size":"28坪","floor":"1","style":"LOHAS","wall":"QUAKE","oneroom":"4帖×1\n6帖×1","garage":"なし","kitchen":"ES I型","kitchenPrice":"¥389,930","color":"ホワイトスタッコ","backStorage":"¥128,470"},{"name":"大角健斗様","size":"28坪","floor":"2","style":"NERO","wall":"CoolBlack","oneroom":"なし","garage":"なし","kitchen":"ES I型","kitchenPrice":"¥353,700","color":"ホワイト","backStorage":"¥118,080"},{"name":"谷髙拓馬様","size":"30坪","floor":"2","style":"NERO","wall":"CoolBlack","oneroom":"なし","garage":"なし","kitchen":"ES ペニンシュラ","kitchenPrice":"¥393,850","color":"ブラックスタッコ","backStorage":"¥141,540"},{"name":"内山雄太様","size":"28坪","floor":"2","style":"NERO","wall":"CoolBlack","oneroom":"4帖×1","garage":"なし","kitchen":"ES I型","kitchenPrice":"¥386,240","color":"グレージュスタッコ","backStorage":"¥139,080"},{"name":"風間淳機様","size":"32坪","floor":"2","style":"VILLA","wall":"CoolBlack","oneroom":"6帖×1","garage":"なし","kitchen":"ES ペニンシュラ","kitchenPrice":"¥465,620","color":"グレージュスタッコ","backStorage":"¥165,390"},{"name":"萩原誠様","size":"24坪","floor":"1","style":"NERO","wall":"AshSmoke","oneroom":"4帖×1","garage":"なし","kitchen":"ES I型","kitchenPrice":"¥255,310","color":"ブラックスタッコ","backStorage":"¥124,310"},{"name":"菊池和貴様","size":"24.5坪","floor":"2","style":"VILLA","wall":"SNOW","oneroom":"6帖×1\n8帖×1","garage":"なし","kitchen":"ND ペニンシュラ","kitchenPrice":"¥989,240","color":"オリーブグレー","backStorage":"¥430,770"},{"name":"髙山輝彦様","size":"24坪","floor":"1","style":"LOHAS","wall":"QUAKE","oneroom":"なし","garage":"なし","kitchen":"ES ペニンシュラ","kitchenPrice":"¥446,160","color":"ソリッドホワイト","backStorage":"¥117,540"},{"name":"牧野稜様","size":"31.5坪","floor":"2","style":"VILLA","wall":"Blue Fog","oneroom":"3帖×1\n4帖×1","garage":"なし","kitchen":"リシェル ペニンシュラ","kitchenPrice":"¥2,373,910","color":"ラスターブラック","backStorage":"¥784,500"},{"name":"戸田将史様","size":"26坪","floor":"1","style":"LOHAS","wall":"SandStorm","oneroom":"4帖×1\n8帖×1","garage":"なし","kitchen":"ES I型","kitchenPrice":"¥0","color":"グレージュスタッコ","backStorage":"¥143,850"},{"name":"潟山裕太様","size":"25坪","floor":"2","style":"NERO","wall":"Metal Gray","oneroom":"4帖×1","garage":"なし","kitchen":"ES I型","kitchenPrice":"¥303,540","color":"ブラックスタッコ","backStorage":"¥112,390"},{"name":"髙木秀一郎様","size":"28坪","floor":"2","style":"VILLA","wall":"Metal Gray","oneroom":"4帖×1","garage":"なし","kitchen":"ES I型","kitchenPrice":"¥367,540","color":"グレージュスタッコ","backStorage":"¥118,390"},{"name":"内田純平様","size":"30坪","floor":"2","style":"COZY","wall":"漆喰","oneroom":"4帖×1\n6帖×1","garage":"なし","kitchen":"ウッドワン ペニンシュラ","kitchenPrice":"¥942,390","color":"ウォルナット","backStorage":"¥321,850"},{"name":"岡﨑恵美様","size":"26坪","floor":"1","style":"LOHAS","wall":"QUAKE","oneroom":"3帖×1","garage":"なし","kitchen":"ES I型","kitchenPrice":"¥297,540","color":"ソリッドホワイト","backStorage":"¥120,080"},{"name":"宮野祐輔様","size":"25坪","floor":"1","style":"LOHAS","wall":"QUAKE","oneroom":"4帖×1","garage":"なし","kitchen":"ES I型","kitchenPrice":"¥277,540","color":"グレージュスタッコ","backStorage":"¥113,080"},{"name":"朝倉真勇人様","size":"24坪","floor":"1","style":"LOHAS","wall":"STONE AGE","oneroom":"なし","garage":"なし","kitchen":"ES I型","kitchenPrice":"¥237,540","color":"ブラックスタッコ","backStorage":"¥92,310"},{"name":"林紘希様","size":"25坪","floor":"1","style":"LOHAS","wall":"SandStorm","oneroom":"4帖×1","garage":"なし","kitchen":"ES I型","kitchenPrice":"¥277,540","color":"グレージュスタッコ","backStorage":"¥113,080"},{"name":"白鳥晃希様","size":"26坪","floor":"1","style":"NERO","wall":"CoolBlack","oneroom":"3帖×1","garage":"なし","kitchen":"ES I型","kitchenPrice":"¥297,540","color":"ソリッドブラック","backStorage":"¥120,080"},{"name":"山本　真様","size":"28坪","floor":"1","style":"LOHAS","wall":"QUAKE","oneroom":"4帖×1","garage":"なし","kitchen":"ES I型","kitchenPrice":"¥317,540","color":"ソリッドホワイト","backStorage":"¥120,080"},{"name":"森下順貴様","size":"26坪","floor":"2","style":"LOHAS","wall":"QUAKE","oneroom":"4帖×1","garage":"なし","kitchen":"ES I型","kitchenPrice":"¥277,540","color":"ホワイトスタッコ","backStorage":"¥113,080"},{"name":"大庭圭太郎様","size":"31.5坪","floor":"2","style":"VILLA","wall":"Metal Gray","oneroom":"4帖×1","garage":"なし","kitchen":"リシェル ペニンシュラ","kitchenPrice":"¥1,595,350","color":"ブラックスタッコ","backStorage":"¥402,310"},{"name":"鎌田真一様","size":"24坪","floor":"1","style":"VILLA","wall":"STONE AGE","oneroom":"8帖×1","garage":"なし","kitchen":"ES ペニンシュラ","kitchenPrice":"¥619,310","color":"グレージュスタッコ","backStorage":"¥154,370"},{"name":"市川真紀様","size":"24坪","floor":"1","style":"VILLA","wall":"Blue Fog","oneroom":"4帖×2","garage":"なし","kitchen":"ND ペニンシュラ","kitchenPrice":"¥471,190","color":"ソリッドブラック","backStorage":"¥200,400"},{"name":"松坂雅樹様","size":"24坪","floor":"1","style":"LOHAS","wall":"STONE AGE","oneroom":"3帖×1\n8帖×1","garage":"なし","kitchen":"ES ペニンシュラ","kitchenPrice":"¥588,370","color":"グレージュスタッコ","backStorage":"¥180,870"},{"name":"鈴木晋太郎様","size":"24.5坪","floor":"2","style":"VILLA","wall":"Sky Gray","oneroom":"6帖×1\n8帖×1","garage":"なし","kitchen":"ES 壁付","kitchenPrice":"¥91,390","color":"ブラックスタッコ","backStorage":"¥0"},{"name":"柴田素基様","size":"32坪","floor":"2","style":"VILLA","wall":"Metal Gray","oneroom":"4帖×2","garage":"なし","kitchen":"田中工藝","kitchenPrice":"¥1,230,000","color":"カプリード","backStorage":"¥480,000"},{"name":"加藤卓巳様","size":"31.5坪","floor":"2","style":"VILLA","wall":"Metal Gray","oneroom":"4帖×1","garage":"なし","kitchen":"リシェル ペニンシュラ","kitchenPrice":"¥1,761,830","color":"プレーンオーク","backStorage":"¥463,540"},{"name":"野村紀真様","size":"30坪","floor":"2","style":"NERO","wall":"CoolBlack","oneroom":"4帖×1","garage":"なし","kitchen":"ES I型","kitchenPrice":"¥340,000","color":"グレージュスタッコ","backStorage":"¥130,770"},{"name":"妙玄翔太様","size":"28坪","floor":"2","style":"VILLA","wall":"STONE AGE","oneroom":"4帖×1","garage":"なし","kitchen":"ES I型","kitchenPrice":"¥340,000","color":"ホワイトスタッコ","backStorage":"¥130,770"},{"name":"平井智之様","size":"30坪","floor":"2","style":"NERO","wall":"Metal Gray","oneroom":"4帖×1","garage":"なし","kitchen":"ES I型","kitchenPrice":"¥357,540","color":"","backStorage":"¥127,080"},{"name":"松村明彦","size":"28坪","floor":"2","style":"NERO","wall":"CoolBlack","oneroom":"なし","garage":"なし","kitchen":"ES ペニンシュラ","kitchenPrice":"¥437,540","color":"ブラックスタッコ","backStorage":"¥154,370"},{"name":"鈴木宏太","size":"28坪","floor":"2","style":"NERO","wall":"Metal Gray","oneroom":"4帖×1","garage":"なし","kitchen":"ES I型","kitchenPrice":"¥317,540","color":"ブラックスタッコ","backStorage":"¥120,080"},{"name":"村松協子","size":"26坪","floor":"1","style":"LOHAS","wall":"QUAKE","oneroom":"4帖×1","garage":"なし","kitchen":"ES I型","kitchenPrice":"¥297,540","color":"ブラックスタッコ","backStorage":"¥113,080"},{"name":"方森光希","size":"24坪","floor":"1","style":"LOHAS","wall":"SandStorm","oneroom":"なし","garage":"なし","kitchen":"ES I型","kitchenPrice":"¥257,540","color":"ブラックスタッコ","backStorage":"¥92,310"},{"name":"樋口恭兵","size":"25坪","floor":"1","style":"NERO","wall":"AshSmoke","oneroom":"4帖×1","garage":"なし","kitchen":"ES ペニンシュラ","kitchenPrice":"¥457,540","color":"ソリッドブラック","backStorage":"¥160,000"},{"name":"池田大樹","size":"26坪","floor":"1","style":"VILLA","wall":"STONE AGE","oneroom":"4帖×1","garage":"なし","kitchen":"ES I型","kitchenPrice":"¥277,540","color":"D4","backStorage":"¥113,080"},{"name":"吉村基","size":"28坪","floor":"1","style":"LOHAS","wall":"QUAKE","oneroom":"4帖×1","garage":"なし","kitchen":"ES ペニンシュラ","kitchenPrice":"¥497,540","color":"アンジェロ","backStorage":"¥171,080"},{"name":"鈴木明人","size":"25坪","floor":"2","style":"NERO","wall":"CoolBlack","oneroom":"なし","garage":"なし","kitchen":"ES I型","kitchenPrice":"¥277,540","color":"スムースホワイト","backStorage":"¥104,770"},{"name":"清水大輔","size":"26坪","floor":"1","style":"LOHAS","wall":"STONE AGE","oneroom":"4.5帖×1","garage":"なし","kitchen":"ES I型","kitchenPrice":"¥142,330","color":"ソリッドホワイト","backStorage":"154370"},{"name":"山下慶輝","size":"24坪","floor":"1","style":"VILLA","wall":"CoolBlack","oneroom":"8帖×1","garage":"なし","kitchen":"ND ペニンシュラ","kitchenPrice":"¥666,020","color":"ソリッドブラック","backStorage":"451790"},{"name":"金森勇人","size":"25坪","floor":"1","style":"NERO","wall":"Metal Gray","oneroom":"6帖×1","garage":"なし","kitchen":"ND ペニンシュラ","kitchenPrice":"¥625,570","color":"オリーブグレー","backStorage":"217100"},{"name":"加野貴裕","size":"25坪","floor":"1","style":"LOHAS","wall":"QUAKE","oneroom":"3帖×1\n4帖×1","garage":"なし","kitchen":"ES I型","kitchenPrice":"¥298,510","color":"ソリッドホワイト","backStorage":""},{"name":"合浦航","size":"31.5坪","floor":"2","style":"VILLA","wall":"Metal Gray","oneroom":"3帖×1\n4帖×1","garage":"なし","kitchen":"ND ペニンシュラ","kitchenPrice":"¥588,780","color":"ソリッドブラック","backStorage":"228310"},{"name":"丸尾星也","size":"30坪","floor":"2","style":"COZY","wall":"漆喰","oneroom":"4帖×1","garage":"なし","kitchen":"リシェル ペニンシュラ","kitchenPrice":"¥1,253,540","color":"クリアモカ","backStorage":"¥357,770"},{"name":"中西智也","size":"28坪","floor":"2","style":"NERO","wall":"Metal Gray","oneroom":"4帖×1","garage":"なし","kitchen":"ES I型","kitchenPrice":"¥317,540","color":"グレージュスタッコ","backStorage":"¥120,080"},{"name":"佐藤藍太","size":"25坪","floor":"1","style":"NERO","wall":"CoolBlack","oneroom":"3帖×1","garage":"なし","kitchen":"ES I型","kitchenPrice":"¥257,540","color":"ソリッドブラック","backStorage":"¥92,310"},{"name":"藤田智伊","size":"28坪","floor":"2","style":"LOHAS","wall":"QUAKE","oneroom":"4帖×1","garage":"なし","kitchen":"ES ペニンシュラ","kitchenPrice":"¥497,540","color":"","backStorage":"¥154,370"}];
+
+// PDF map: customer name (without 様) -> { plan: fileId, storage: fileId }
+const pdfMap = {
+  // --- 既存 ---
+  '大淵謙一': { plan: '1ZmUSWq658jEj9AtrYQYbYScpdIvoDf-X' },
+  '谷髙拓馬': { plan: '1RAOfJCAA9KidIcfPbQpUBTDcLuvIgmqv' },
+  '方森光希':  { plan: '1QjwyblIJPkL3hE-Ddn_hp6v_6UruhqpP', storage: '1X6_BhJH-tw2l54ulzi2zjNho4FQvwIb4' },
+  '加藤卓巳': { plan: '1NBNxSri3TaBcMsN8YXrGUC_NJwbola2e' },
+  '内山雄太': { plan: '1b85_9KpS_D2_VRh0REZ-FYOgPPXCkA53', storage: '1s6V7VASjDaT34iXCMGh4F2dwz3GFreWW' },
+  '清水大輔': { plan: '1YWl4Jp8_f0T_NZDEEYc_RqOgDQp1Wqhw', storage: '1SD8ow86nEy-cCpiVYC-bvcAjFIpk-dkj' },
+  '鎌田真一': { plan: '1Xf-XI_URhQPRX7gI1L-lN5loJAy1KTxG', storage: '15q8p2JG-An3tR3NSHZGjY5K2hqVEz9MA' },
+  '佐藤藍太': { plan: '1RSqqiKjs9IazcmFaB71iiapNT34BVauV' },
+  '萩原誠':   { plan: '1VOONpMg5cXCzo9zRU2ryvuZrunb0ClKH', storage: '1rCsoTECGSULfieMpxjZp7gQjeTeuvnwo' },
+  '福田祐亮': { plan: '1KdQ4_9vebgHkB71FQ3waQWPXPRf2TPwm' },
+  '妙玄翔太': { plan: '1Eh1oqwzKfr1_Y7b0Z3O9OsyL8bzirJx2', storage: '1-mOsIFcehTizQEzoeaZlwJwR7eRJzhxs' },
+  '山下慶輝': { plan: '12NpdDqTemThnC78VomisZkyVbBLnY0mF', storage: '1nbPQBHjOxYndcqiFU5WpFXwIdtvB_nuw' },
+  '池田大樹': { plan: '1aKkDl4LuRC3dA_vJsoDX8CHEpLLsb-KT' },
+  '丸尾星也': { plan: '1hwVCrZb2r7tqKGmhthtTDkbuvkchQVEC' },
+  '那須元樹': { plan: '1aA0qrbTtOstp9_Et-wihKQ9_GrX5zN-D', storage: '1e0r2hD0Gi6W6tsX5w6wiWnt03580Re48' },
+  '神馬孝俊': { plan: '12r0FsEsuAgR1RX_p2BRjub8j9VmFc7c_', storage: '19Xju-ceoT-_TSFctSLOeYFUUUZLVJSe1' },
+  '松下稜':   { plan: '1ZWIQJGlgSU3dCx0LlBooQlaeZ0lGtQns', storage: '1loefXULgj_bOZBrQ0dpXAvEWikJ8GfrW' },
+  '松坂雅樹': { plan: '1knO2SGkvNmUlyDhWKkQit5PELjx3GjU5' },
+  '大角健斗': { plan: '1ovPytrlF8rW97IyY6M9WBLjuwZFDT4Y6' },
+  '藤田智伊': { plan: '1VKvS8VYCFkqHgjzkqymcPJtC7eKZotro', storage: '1A-SKURoJiZP9vtlkQF5POEQgGlTbvaSX' },
+  '樋口恭兵': { plan: '1sOY0x8qnC39WmP9dN1GDQDgfJimNo2eH' },
+  '加野貴裕': { plan: '1Od8Hlm7ywD1m6AbLvrgqg3mjJKmMjVFL' },
+  '中西智也': { plan: '1o3wol76jAFvEwuztxLy_k7axOKUFRikD' },
+  '平井智之': { plan: '14Zcl9p4qAMkLgh7vbOcv5Pk2qYoJOAXJ' },
+  // --- 今回追加 ---
+  '黒柳雄介': { plan: '155ne4Gyu_cg5j-7QqBe_fB_MRhmMNLzM' },
+  '風間淳機': { plan: '1g1qhFDXRpxZYQMUuxhVSHP4bBmYeK3ev' },
+  '菊池和貴': { plan: '177sX8P25P4jwlrPh37WnLRDU2EYZ4vGx' },
+  '髙山輝彦': { plan: '1vMGT0ZIC2Jhwtiml9evGj2WEh0N1_sZ_' },
+  '牧野稜':   { plan: '1Q-4GEFzuu9tBhMxvU9twWYJSYk_OE5Q_' },
+  '戸田将史': { plan: '11epVvsRmjfcGct2Vyb3MN3bRsRXFOETc' },
+  '潟山裕太': { plan: '15nFMyC4uGod20uAPJWLl5xCBECoHCezI' },
+  '髙木秀一郎': { plan: '1QPgKSrhWt7NhbcJ9TEWuT2mTR4aXYJBB' },
+  '内田純平': { plan: '1pBex58sxUhMggtATTY0KfhOcFhNaKCDX' },
+  '岡﨑恵美': { plan: '176DVyeXL0i-Ef25118IlKK27MIByCUuW' },
+  '宮野祐輔': { plan: '1i7g-kQGgxFM0aBYuUjNCfrWj1VcDAl0v' },
+  '林紘希':   { plan: '1v-wWSV1B7MSDC6RtqJI0gXmnRZ0IBLxs' },
+  '山本　真': { plan: '1MDYTpnLuYYhU4G3h07Naert_bKCBNnaX' },
+  '森下順貴': { plan: '1frv13xzR1NcuQCNj0VFpyL7mLWWDIAfm' },
+  '大庭圭太郎': { plan: '1s7zYdX8z4FXzOSxStvOl8HlnUsr__qrD' },
+  '市川真紀': { plan: '1oaZnzl9jS6217KDf9Hi5xUZDDs1EwwmU' },
+  '鈴木晋太郎': { plan: '1DZ3uqGAdk1iT6lSMluWMVVFVWMkzanlB' },
+  '柴田素基': { plan: '1JbUgXQRrkPx8l-T2alGdgbN_xGYftwec' },
+  '野村紀真': { plan: '1SwSCF_xp0wtuXCiKQdNL26W0wS5LERys' },
+  '松村明彦': { plan: '1lnzFvqd-WhDbcr9rscZmEd_iAwmnHElS' },
+  '鈴木宏太': { plan: '1JyJpae20j20HRFO-HD9841Hk3rOF3bLh' },
+  '村松協子': { plan: '1GGW1zwkYHkQUGg4HPK3KaQiTbVwwCuKV' },
+  '吉村基':   { plan: '1M0Lx08m7Bm7cijY_LFLlHjwXeeD0t9qg' },
+  '鈴木明人': { plan: '1LEtfS9t5WTgttCAO4mvuAkkGUwTUahT9' },
+  '金森勇人': { plan: '1UJVP5j4ScTJ1rBiNAKYBaPGmhniipvI9' },
+  '合浦航':   { plan: '1QCCR8fQEf2CcuAn11b3zAAN89UuT0wbO' },
+  '白鳥晃希': { plan: '15ZAPjbNtW3ibkpZEkDup_Yx-yYcGsyXU' },
+};
+function getPdfs(name) {
+  const key = name.replace(/様$/, '').trim();
+  return pdfMap[key] || null;
+}
+function driveUrl(id) { return `https://drive.google.com/file/d/${id}/view`; }
+
+// Enrich data with parsed kitchen maker/type
+const data = rawData.map(d => {
+  let maker = '', kType = '', kNote = '';
+  const k = d.kitchen;
+  if (k.startsWith('ES')) { maker = 'LIXL ES'; }
+  else if (k.startsWith('リシェル')) { maker = 'LIXL リシェル'; }
+  else if (k.startsWith('ND')) { maker = 'LIXL ND'; }
+  else if (k.startsWith('ウッドワン')) { maker = 'ウッドワン'; }
+  else if (k.startsWith('田中工藝')) { maker = '田中工藝'; }
+  else { maker = k; }
+  if (k.includes('I型') || k.includes('I 型')) kType = 'I型';
+  else if (k.includes('ペニンシュラ')) kType = 'ペニンシュラ';
+  else if (k.includes('壁付')) kType = '壁付';
+  if (k.includes('背面吊戸棚')) kNote = '背面吊戸棚あり';
+  const hasOneroom = d.oneroom && d.oneroom !== 'なし' && d.oneroom !== '';
+  const hasGarage  = d.garage  && d.garage  !== 'なし' && d.garage  !== '';
+  return { ...d, maker, kType, kNote, hasOneroom, hasGarage };
+});
+
+// Color palette map
+const colorMap = {
+  'ソリッドホワイト': '#f5f5f3', 'ホワイトスタッコ': '#ece9e4', 'ホワイト': '#ffffff', 'スムースホワイト': '#f0ede8',
+  'ブラックスタッコ': '#3a3a3a', 'ソリッドブラック': '#1a1a1a', 'ラスターブラック': '#2a2a2a',
+  'グレージュスタッコ': '#9e9285', 'オリーブグレー': '#7a8a72', 'D4': '#8a7a6a',
+  'ウォルナット': '#6b4226', 'クリアモカ': '#8b6040', 'カプリード': '#b07850',
+  'プレーンオーク': '#c4a878', 'クリエラスク': '#d4c4a0', 'アンジェロ': '#c8b898'
+};
+
+// Filter state
+let filters = { maker: null, kType: null, color: null, style: null, size: null, oneroom: false, garage: false };
+
+function getMakerLabel(m) { return m; }
+
+function buildFilters() {
+  const groups = [
+    { key: 'maker', elId: 'makerFilters', values: [...new Set(data.map(d => d.maker).filter(Boolean))] },
+    { key: 'kType', elId: 'typeFilters', values: [...new Set(data.map(d => d.kType).filter(Boolean))] },
+    { key: 'color', elId: 'colorFilters', values: [...new Set(data.map(d => d.color).filter(Boolean))] },
+    { key: 'style', elId: 'styleFilters', values: ['COZY','LOHAS','NERO','VILLA'] },
+    { key: 'size', elId: 'sizeFilters', values: [...new Set(data.map(d => d.size).filter(Boolean))].sort((a,b)=>{const n=s=>parseFloat(s);return n(a)-n(b);}) },
+  ];
+  groups.forEach(({ key, elId, values }) => {
+    const el = document.getElementById(elId);
+    el.innerHTML = '';
+    values.forEach(v => {
+      const cnt = data.filter(d => d[key] === v).length;
+      const btn = document.createElement('button');
+      btn.className = 'filter-btn';
+      btn.dataset.key = key;
+      btn.dataset.val = v;
+      btn.onclick = () => toggleFilter(key, v);
+      if (key === 'color') {
+        const dot = `<span class="color-dot" style="background:${colorMap[v]||'#ccc'}"></span>`;
+        btn.innerHTML = `${dot}${v} <span class="count">${cnt}</span>`;
+      } else {
+        btn.innerHTML = `${v} <span class="count">${cnt}</span>`;
+      }
+      el.appendChild(btn);
+    });
+  });
+
+  // Special counts
+  document.getElementById('cnt-oneroom').textContent = data.filter(d=>d.hasOneroom).length;
+  document.getElementById('cnt-garage').textContent  = data.filter(d=>d.hasGarage).length;
+}
+
+function toggleFilter(key, val) {
+  filters[key] = filters[key] === val ? null : val;
+  applyFilters();
+  updateFilterBtns();
+}
+
+function toggleSpecial(key) {
+  filters[key] = !filters[key];
+  document.getElementById('btn-' + key).classList.toggle('active', filters[key]);
+  applyFilters();
+  updateActiveChips();
+}
+
+function clearAll() {
+  filters = { maker: null, kType: null, color: null, style: null, size: null, oneroom: false, garage: false };
+  document.getElementById('searchInput').value = '';
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  applyFilters();
+  updateActiveChips();
+}
+
+function updateFilterBtns() {
+  document.querySelectorAll('.filter-btn[data-key]').forEach(btn => {
+    btn.classList.toggle('active', filters[btn.dataset.key] === btn.dataset.val);
+  });
+  updateActiveChips();
+}
+
+function updateActiveChips() {
+  const el = document.getElementById('activeFilters');
+  const chips = [];
+  const labels = { maker:'メーカー', kType:'型', color:'扉カラー', style:'スタイル', size:'サイズ' };
+  Object.entries(labels).forEach(([key, label]) => {
+    if (filters[key]) chips.push({ key, label: `${label}: ${filters[key]}` });
+  });
+  if (filters.oneroom) chips.push({ key:'oneroom', label:'ワンルームあり' });
+  if (filters.garage)  chips.push({ key:'garage',  label:'ガレージあり' });
+  el.innerHTML = chips.map(c =>
+    `<span class="active-chip">${c.label} <button onclick="removeChip('${c.key}')">×</button></span>`
+  ).join('');
+}
+
+function removeChip(key) {
+  if (key === 'oneroom' || key === 'garage') { filters[key] = false; document.getElementById('btn-'+key).classList.remove('active'); }
+  else filters[key] = null;
+  applyFilters();
+  updateFilterBtns();
+}
+
+function applyFilters() {
+  const q = document.getElementById('searchInput').value.trim().toLowerCase();
+  const filtered = data.filter(d => {
+    if (q && !d.name.toLowerCase().includes(q)) return false;
+    if (filters.maker  && d.maker  !== filters.maker)  return false;
+    if (filters.kType  && d.kType  !== filters.kType)  return false;
+    if (filters.color  && d.color  !== filters.color)  return false;
+    if (filters.style  && d.style  !== filters.style)  return false;
+    if (filters.size   && d.size   !== filters.size)   return false;
+    if (filters.oneroom && !d.hasOneroom) return false;
+    if (filters.garage  && !d.hasGarage)  return false;
+    return true;
+  });
+  document.getElementById('countBadge').textContent = `${filtered.length} 件`;
+  renderCards(filtered);
+}
+
+function renderCards(list) {
+  const grid = document.getElementById('grid');
+  if (!list.length) {
+    grid.innerHTML = `<div class="no-results"><div class="icon">🔍</div><p>該当するお客様が見つかりませんでした</p></div>`;
+    return;
+  }
+  grid.innerHTML = list.map(d => {
+    const colorBg = colorMap[d.color] || '#e0e0e0';
+    const colorDot = d.color
+      ? `<span class="color-chip" style="background:${colorBg};border-color:${d.color.includes('ホワイト')||d.color==='ホワイト'?'#bbb':'rgba(0,0,0,0.15)'}"></span><span class="color-name">${d.color}</span>`
+      : `<span style="font-size:12px;color:#aaa">カラー未登録</span>`;
+
+    const kitchenDisplay = d.kitchen || '—';
+    const makerBadge = d.maker ? `<span class="label">${d.maker}</span>` : '';
+    const typeBadge  = d.kType ? `<span class="label">${d.kType}</span>` : '';
+    const noteBadge  = d.kNote ? `<span class="label">${d.kNote}</span>` : '';
+
+    const backNum = parseFloat((d.backStorage||'').replace(/[^0-9]/g,''));
+    const backTag = backNum > 0 ? `<span class="detail-tag price-tag">背面収納 ${d.backStorage.startsWith('¥')?d.backStorage:'¥'+backNum.toLocaleString()}</span>` : '';
+
+    const oneroomTag = d.hasOneroom ? `<span class="detail-tag has-value">ワンルーム ${d.oneroom.replace(/\n/g,' / ')}</span>` : '';
+    const garageTag  = d.hasGarage  ? `<span class="detail-tag has-value">ガレージ ${d.garage}</span>` : '';
+    const wallTag    = d.wall       ? `<span class="detail-tag">外壁: ${d.wall}</span>` : '';
+    const sizeTag    = `<span class="detail-tag">${d.size} ${d.floor}F</span>`;
+
+    return `<div class="card" onclick="">
+      <div class="card-header">
+        <div class="card-name">${d.name}</div>
+        <span class="style-tag style-${d.style}">${d.style}</span>
+      </div>
+      <div class="info-row">${sizeTag}${wallTag}</div>
+      <div class="kitchen-block">
+        <div class="kitchen-maker">${d.maker||'—'}</div>
+        <div class="kitchen-name">${kitchenDisplay}</div>
+        <div class="info-row" style="margin:4px 0 4px;">${makerBadge}${typeBadge}${noteBadge}</div>
+        <div class="kitchen-price">${d.kitchenPrice && d.kitchenPrice !== '¥0' ? d.kitchenPrice : '標準仕様'}</div>
+      </div>
+      <div class="color-row">${colorDot}</div>
+      ${(backTag||oneroomTag||garageTag) ? `<div class="detail-row">${backTag}${oneroomTag}${garageTag}</div>` : ''}
+      ${(() => { const p = getPdfs(d.name); if (!p) return ''; const planBtn = p.plan ? `<a class="pdf-btn pdf-btn-plan" href="${driveUrl(p.plan)}" target="_blank">📄 キッチンプラン</a>` : ''; const storageBtn = p.storage ? `<a class="pdf-btn pdf-btn-storage" href="${driveUrl(p.storage)}" target="_blank">🗄 収納プラン</a>` : ''; return `<div class="pdf-links">${planBtn}${storageBtn}</div>`; })()}
+    </div>`;
+  }).join('');
+}
+
+// Init
+buildFilters();
+applyFilters();
+</script>
+</body>
+</html>

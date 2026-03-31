@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PG HOUSE アドバイザー 理論年収シミュレーター</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-annotation/3.0.1/chartjs-plugin-annotation.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700;900&family=DM+Sans:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#fff;--bg2:#f5f4f7;--card:#fff;--border:#e5e3eb;--border2:#ccc8d6;--tx:#1a1a2e;--tx2:#4a4560;--tx3:#9590a8;--p:#7a00df;--p2:#9b3ff0;--p3:#f0e4ff;--dk:#32373c;--g:#059669;--g2:#34d399;--r:#dc2626;--y:#d97706;--shadow:0 1px 3px rgba(0,0,0,.06);--shadow2:0 4px 6px rgba(0,0,0,.05);}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Noto Sans JP','DM Sans',sans-serif;background:var(--bg2);color:var(--tx);line-height:1.6;-webkit-font-smoothing:antialiased;}
+.W{max-width:1400px;margin:0 auto;padding:24px;}
+.header{text-align:center;padding:48px 24px 36px;background:var(--dk);color:#fff;}
+.header h1{font-size:2rem;font-weight:900;letter-spacing:-.02em;}.header h1 span{color:var(--p3);}
+.header .sub{color:rgba(255,255,255,.6);font-size:.9rem;margin-top:4px;font-weight:300;}
+.header .badge{display:inline-block;margin-top:12px;padding:5px 18px;border:1px solid rgba(122,0,223,.5);border-radius:9999px;font-size:.8rem;color:var(--p3);font-weight:500;background:rgba(122,0,223,.2);}
+.S{margin-top:48px;padding-top:28px;border-top:2px solid var(--border);}
+.SH{display:flex;align-items:center;gap:12px;}
+.SN{width:30px;height:30px;background:var(--p);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700;flex-shrink:0;}
+.ST{font-size:1.35rem;font-weight:700;}.SD{color:var(--tx2);margin-top:6px;font-size:.88rem;margin-left:42px;}
+.B{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px;margin-top:20px;box-shadow:var(--shadow);}
+.B h3{font-size:.95rem;font-weight:700;margin-bottom:4px;}.B .cn{font-size:.75rem;color:var(--tx3);margin-bottom:12px;}
+canvas{max-height:420px;}
+.I{background:linear-gradient(135deg,rgba(122,0,223,.06),rgba(122,0,223,.02));border:1px solid rgba(122,0,223,.18);border-radius:14px;padding:24px;margin-top:20px;}
+.I h3{color:var(--p);font-size:1rem;margin-bottom:10px;}.I p{color:var(--tx2);font-size:.88rem;line-height:1.8;}.I strong{color:var(--tx);font-weight:700;}
+.footer{text-align:center;padding:40px 24px;font-size:.72rem;margin-top:56px;background:var(--dk);color:rgba(255,255,255,.5);}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-top:16px;}
+.fg{display:flex;flex-direction:column;gap:4px;}
+.fg label{font-size:.75rem;font-weight:600;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em;}
+.fg select,.fg input{padding:10px 12px;border:1px solid var(--border2);border-radius:8px;font-size:.88rem;font-family:inherit;background:var(--bg);color:var(--tx);transition:border .2s;}
+.fg select:focus,.fg input:focus{outline:none;border-color:var(--p2);box-shadow:0 0 0 3px rgba(122,0,223,.15);}
+.res{background:linear-gradient(135deg,#32373c,#4a4f55);border-radius:16px;padding:32px;margin-top:24px;color:#fff;position:relative;overflow:hidden;}
+.res::after{content:'';position:absolute;top:-40%;right:-10%;width:300px;height:300px;background:rgba(122,0,223,.08);border-radius:50%;}
+.res-top{font-size:.8rem;opacity:.7;font-weight:300;}
+.res-val{font-size:2.8rem;font-weight:900;font-family:'DM Sans',sans-serif;margin-top:4px;}.res-val small{font-size:1rem;font-weight:400;opacity:.6;}
+.res-sub{font-size:.85rem;opacity:.8;margin-top:4px;}
+.res-bar{margin-top:20px;}
+.bar-row{display:flex;align-items:center;margin-bottom:6px;}
+.bar-label{width:100px;font-size:.72rem;opacity:.7;text-align:right;padding-right:10px;flex-shrink:0;}
+.bar-wrap{flex:1;height:28px;background:rgba(255,255,255,.1);border-radius:6px;overflow:hidden;}
+.bar-fill{height:100%;border-radius:6px;display:flex;align-items:center;padding:0 10px;font-size:.72rem;font-weight:700;font-family:'DM Sans',sans-serif;transition:width .5s ease;}
+.bar-amt{width:110px;font-size:.75rem;font-family:'DM Sans',sans-serif;padding-left:10px;flex-shrink:0;opacity:.9;}
+.month-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-top:16px;}
+.mc{text-align:center;padding:20px 14px;border-radius:12px;background:var(--bg2);border:1px solid var(--border);}
+.mc .mcl{font-size:.7rem;color:var(--tx3);font-weight:500;text-transform:uppercase;letter-spacing:.05em;}
+.mc .mcv{font-size:1.6rem;font-weight:900;font-family:'DM Sans',sans-serif;margin-top:4px;}
+.mc .mcs{font-size:.72rem;color:var(--tx3);margin-top:2px;}
+.mc.total{background:var(--dk);border-color:var(--dk);}.mc.total .mcl,.mc.total .mcs{color:rgba(255,255,255,.5);}.mc.total .mcv{color:#fff;}
+.rm-step{display:flex;gap:0;margin-top:20px;}
+.rm-item{flex:1;text-align:center;padding:20px 10px;background:var(--bg);border:1px solid var(--border);position:relative;}
+.rm-item:first-child{border-radius:12px 0 0 12px;}.rm-item:last-child{border-radius:0 12px 12px 0;}
+.rm-item::after{content:'▶';position:absolute;right:-8px;top:50%;transform:translateY(-50%);color:var(--border2);font-size:.7rem;z-index:1;}
+.rm-item:last-child::after{display:none;}
+.rm-year{font-size:.7rem;color:var(--tx3);font-weight:600;text-transform:uppercase;letter-spacing:.05em;}
+.rm-units{font-size:.78rem;font-weight:700;color:var(--p);margin-top:4px;}
+.rm-salary{font-size:1.2rem;font-weight:900;font-family:'DM Sans',sans-serif;margin-top:4px;}
+.rm-monthly{font-size:.7rem;color:var(--tx3);margin-top:2px;}
+.rm-item.hl-rm{background:linear-gradient(135deg,rgba(122,0,223,.08),rgba(122,0,223,.02));border-color:var(--p);}
+@media(max-width:700px){.rm-step{flex-direction:column;}.rm-item{border-radius:0!important;}.rm-item::after{display:none;}}
+.note{font-size:.75rem;color:var(--tx3);margin-top:8px;font-style:italic;}
+.qual-grid{display:flex;flex-direction:column;gap:6px;margin-top:2px;}
+.qc{display:flex;align-items:center;gap:6px;font-size:.82rem;color:var(--tx2);cursor:pointer;font-weight:400;}
+.qc input[type=checkbox]{accent-color:#7a00df;width:16px;height:16px;cursor:pointer;}
+/* Global arari bar */
+.arari-bar{background:var(--dk);padding:12px 24px;display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;}
+.arari-bar label{color:rgba(255,255,255,.7);font-size:.8rem;font-weight:500;}
+.arari-bar input{padding:6px 12px;border:1px solid rgba(255,255,255,.2);border-radius:8px;font-size:.9rem;font-family:'DM Sans',sans-serif;background:rgba(255,255,255,.1);color:#fff;width:100px;text-align:center;font-weight:700;}
+.arari-bar input:focus{outline:none;border-color:var(--p2);}
+.arari-bar span{color:rgba(255,255,255,.5);font-size:.75rem;}
+@media print{
+  body{background:#fff!important;}.no-print{display:none!important;}
+  .W{max-width:100%;padding:12px;}
+  .S{page-break-inside:avoid;margin-top:24px;padding-top:12px;}
+  .B{page-break-inside:avoid;overflow:hidden;}
+  canvas{max-width:100%!important;width:100%!important;height:auto!important;max-height:320px!important;}
+  .header,.arari-bar,.res,.mc.total{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  .form-grid{display:none;}
+}
+.print-btn{position:fixed;bottom:24px;right:24px;background:var(--dk);color:#fff;border:none;padding:12px 24px;border-radius:9999px;font-size:.85rem;font-weight:600;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.2);z-index:100;font-family:inherit;transition:transform .2s;}
+.print-btn:hover{transform:scale(1.05);}
+</style>
+</head>
+<body>
+
+<button class="print-btn no-print" onclick="window.print()">&#128424; 印刷 / PDF</button>
+
+<div class="header">
+<h1><span>PG HOUSE</span> 理論年収シミュレーター</h1>
+<div class="sub">Advisor Compensation Simulator</div>
+<div class="badge">2026年度</div>
+</div>
+
+<div class="arari-bar no-print">
+<label>ベース粗利額（万円）</label>
+<input type="number" id="g-arari" value="784" min="400" max="1500" step="1" onchange="onArariChange()" oninput="onArariChange()">
+<span>※毎年3月改定。全セクションに反映</span>
+</div>
+
+<div class="W">
+
+<div class="S">
+<div class="SH"><div class="SN">1</div><h2 class="ST">年収シミュレーター</h2></div>
+<p class="SD">グレード・役職・棟数・評価ランクを選択すると、年収と内訳を即座に算出</p>
+<div class="B">
+<div class="form-grid">
+<div class="fg"><label>グレード</label><select id="grade"><option value="G2">G2</option><option value="G3">G3</option><option value="G4" selected>G4</option><option value="G5">G5</option><option value="G6">G6</option><option value="E4">E4</option><option value="E5">E5</option><option value="E6">E6</option></select></div>
+<div class="fg"><label>役職</label><select id="position"><option value="none">役職なし</option><option value="kakaricho">係長</option><option value="kacho">課長</option><option value="bucho">部長</option><option value="jigyobucho">事業部長</option><option value="shikkoyakuin">執行役員</option></select></div>
+<div class="fg"><label>年間棟数</label><select id="units"></select></div>
+<div class="fg"><label>評価ランク</label><select id="rank"><option value="S+">S+</option><option value="S">S</option><option value="A+">A+</option><option value="A">A</option><option value="B+" selected>B+</option><option value="B">B</option><option value="C+">C+</option><option value="C-">C-</option><option value="D">D</option><option value="D-">D-</option></select></div>
+<div class="fg"><label>図面作成</label><select id="drawing" onchange="updateAllGraphs()"><option value="yes" selected>あり（100%支給）</option><option value="no">なし（ARRCH基準を適用）</option></select></div>
+<div class="fg"><label>保有資格</label><div id="qual-checks" class="qual-grid">
+<label class="qc"><input type="checkbox" value="10000" onchange="updateS1()">建築士1級（1万）</label>
+<label class="qc"><input type="checkbox" value="5000" onchange="updateS1()">建築士2級（5千）</label>
+<label class="qc"><input type="checkbox" value="5000" onchange="updateS1()">宅地建物取引士（5千）</label>
+<label class="qc"><input type="checkbox" value="5000" onchange="updateS1()">専任宅建士（5千）</label>
+</div></div>
+</div>
+</div>
+<div id="s1-result"></div>
+</div>
+
+<div class="S">
+<div class="SH"><div class="SN">2</div><h2 class="ST">月収ベース表示</h2></div>
+<p class="SD">年間棟数を達成した場合の月額換算内訳</p>
+<div id="s2-result"></div>
+</div>
+
+<div class="S">
+<div class="SH"><div class="SN">3</div><h2 class="ST">年収ロードマップ</h2></div>
+<p class="SD">入社後の成長に伴う年収の伸びをシミュレーション</p>
+<div class="B">
+<h3>成長シナリオ設定</h3>
+<div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(120px,1fr))">
+<div class="fg"><label>1年目 棟数</label><select id="rm-u1" class="rm-sel"></select></div>
+<div class="fg"><label>1年目 グレード</label><select id="rm-g1" class="rm-sel"><option value="G2">G2</option><option value="G3" selected>G3</option><option value="G4">G4</option><option value="G5">G5</option><option value="G6">G6</option><option value="E4">E4</option><option value="E5">E5</option><option value="E6">E6</option></select></div>
+<div class="fg"><label>1年目 役職</label><select id="rm-p1" class="rm-sel"><option value="none" selected>役職なし</option><option value="kakaricho">係長</option><option value="kacho">課長</option><option value="bucho">部長</option><option value="jigyobucho">事業部長</option><option value="shikkoyakuin">執行役員</option></select></div>
+</div>
+<div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(120px,1fr))">
+<div class="fg"><label>3年目 棟数</label><select id="rm-u3" class="rm-sel"></select></div>
+<div class="fg"><label>3年目 グレード</label><select id="rm-g3" class="rm-sel"><option value="G2">G2</option><option value="G3">G3</option><option value="G4" selected>G4</option><option value="G5">G5</option><option value="G6">G6</option><option value="E4">E4</option><option value="E5">E5</option><option value="E6">E6</option></select></div>
+<div class="fg"><label>3年目 役職</label><select id="rm-p3" class="rm-sel"><option value="none" selected>役職なし</option><option value="kakaricho">係長</option><option value="kacho">課長</option><option value="bucho">部長</option><option value="jigyobucho">事業部長</option><option value="shikkoyakuin">執行役員</option></select></div>
+</div>
+<div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(120px,1fr))">
+<div class="fg"><label>5年目 棟数</label><select id="rm-u5" class="rm-sel"></select></div>
+<div class="fg"><label>5年目 グレード</label><select id="rm-g5" class="rm-sel"><option value="G2">G2</option><option value="G3">G3</option><option value="G4" selected>G4</option><option value="G5">G5</option><option value="G6">G6</option><option value="E4">E4</option><option value="E5">E5</option><option value="E6">E6</option></select></div>
+<div class="fg"><label>5年目 役職</label><select id="rm-p5" class="rm-sel"><option value="none">役職なし</option><option value="kakaricho" selected>係長</option><option value="kacho">課長</option><option value="bucho">部長</option><option value="jigyobucho">事業部長</option><option value="shikkoyakuin">執行役員</option></select></div>
+</div>
+<div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(120px,1fr))">
+<div class="fg"><label>評価ランク（共通）</label><select id="rm-rank" class="rm-sel"><option value="S+">S+</option><option value="S">S</option><option value="A+">A+</option><option value="A">A</option><option value="B+" selected>B+</option><option value="B">B</option><option value="C+">C+</option><option value="C-">C-</option><option value="D">D</option><option value="D-">D-</option></select></div>
+</div>
+</div>
+<div id="s3-result"></div>
+<div class="B"><canvas id="rm-chart"></canvas></div>
+</div>
+
+<div class="S">
+<div class="SH"><div class="SN">4</div><h2 class="ST">年収カーブ</h2></div>
+<p class="SD">棟数ごとの年収推移。1,000万・2,000万ラインを表示</p>
+<div class="B">
+<div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr));margin-bottom:16px">
+<div class="fg"><label>グレード</label><select id="cv-grade"><option value="G2">G2</option><option value="G3">G3</option><option value="G4" selected>G4</option><option value="G5">G5</option><option value="G6">G6</option><option value="E4">E4</option><option value="E5">E5</option><option value="E6">E6</option></select></div>
+<div class="fg"><label>評価ランク</label><select id="cv-rank"><option value="S+">S+</option><option value="S">S</option><option value="A+">A+</option><option value="A">A</option><option value="B+" selected>B+</option><option value="B">B</option><option value="C+">C+</option><option value="C-">C-</option><option value="D">D</option><option value="D-">D-</option></select></div>
+</div>
+<p class="cn">同一グレード・評価で、役職別の年収カーブを比較。ホバーで全役職の年収を一括表示</p>
+<canvas id="cv-chart"></canvas>
+</div>
+</div>
+
+<div class="S">
+<div class="SH"><div class="SN">5</div><h2 class="ST">業界水準との比較</h2></div>
+<p class="SD">住宅営業職の一般的な年収水準とPG HOUSEを比較</p>
+<div class="B">
+<h3>PG HOUSE（G4 係長 B+） vs 業界水準</h3>
+<p class="cn">住宅営業の棟数帯別年収レンジと比較。PG HOUSEの圧倒的な優位性が一目で分かる</p>
+<canvas id="ind-chart" style="max-height:450px"></canvas>
+<div class="I" style="margin-top:20px">
+<h3>出典・データソース</h3>
+<p><strong>住宅営業 平均年収 447万円</strong>：求人ボックス 給料ナビ（2026年1月・掲載求人の中央値）<br>
+<strong>給与レンジ 328〜825万円</strong>：同上（正社員の給与幅）<br>
+<strong>中小HM 400〜600万円 / 大手HM 500〜800万円</strong>：コトラ・宅建Jobマガジン・住まキャリ等の複数転職メディア調査<br>
+<strong>棟数別の業界推計モデル</strong>：上記データおよび「住宅営業のインセンティブは販売価格の3〜10%」（コトラ調査）を基に、棟数連動で推計<br>
+<strong>年収1,000万超</strong>：業界では「不可能ではないが簡単ではない」（コトラ）とされ、大手の一部トップセールスに限られる</p>
+</div>
+</div>
+</div>
+
+</div><div class="footer">PG HOUSE アドバイザー 理論年収シミュレーター ｜ LIFEFUND Corporation ｜ 社外秘<br>Generated 2026-03-22</div>
+
+<script>
+// ===== DATA =====
+const BASE_SALARY={G2:268000,G3:310000,G4:350000,G5:390000,G6:430000,E4:350000,E5:390000,E6:430000};
+const POS_ALLOW={none:0,kakaricho:20000,kacho:60000,bucho:90000,jigyobucho:120000,shikkoyakuin:150000};
+const POS_LABEL={none:'役職なし',kakaricho:'係長',kacho:'課長',bucho:'部長',jigyobucho:'事業部長',shikkoyakuin:'執行役員'};
+const INC_TABLE=[{min:1,max:3,rate:.02},{min:4,max:6,rate:.03},{min:7,max:9,rate:.09},{min:10,max:10,rate:.12},{min:11,max:12,rate:.12},{min:13,max:15,rate:.13},{min:16,max:17,rate:.14},{min:18,max:99,rate:.15}];
+const RANKS=['D-','D','C-','C+','B','B+','A','A+','S','S+'];
+const RI={};RANKS.forEach((r,i)=>RI[r]=i);
+const BONUS={5:[0,0,0,0,0,0,0,0,0,0],6:[240000,280000,320000,360000,400000,440000,480000,520000,560000,600000],7:[340000,400000,460000,530000,590000,650000,710000,780000,840000,900000],8:[440000,520000,610000,690000,780000,860000,950000,1030000,1120000,1200000],9:[540000,650000,750000,860000,970000,1070000,1180000,1290000,1390000,1500000],10:[840000,940000,1100000,1260000,1410000,1570000,1730000,1810000,1960000,2120000],11:[840000,1010000,1190000,1360000,1530000,1710000,1880000,2050000,2230000,2400000],12:[1040000,1260000,1480000,1690000,1910000,2130000,2350000,2560000,2780000,3000000],13:[1240000,1500000,1760000,2030000,2290000,2550000,2810000,3080000,3340000,3600000]};
+
+// ★ ARRCH基準のインセンティブ累計データ配列（0棟〜20棟まで）
+const ARRCH_INC = [
+  0,        // 0棟
+  80000,    // 1棟
+  160000,   // 2棟
+  240000,   // 3棟
+  320000,   // 4棟
+  400000,   // 5棟
+  480000,   // 6棟
+  560000,   // 7棟
+  800000,   // 8棟
+  900000,   // 9棟
+  1400000,  // 10棟
+  1540000,  // 11棟
+  2400000,  // 12棟
+  2600000,  // 13棟
+  3500000,  // 14棟
+  3750000,  // 15棟
+  4800000,  // 16棟
+  5100000,  // 17棟
+  5400000,  // 18棟
+  5700000,  // 19棟
+  6000000   // 20棟
+];
+
+function getArari(){return parseInt(document.getElementById('g-arari').value)*10000||7840000;}
+function getIR(u){for(const t of INC_TABLE)if(u>=t.min&&u<=t.max)return t.rate;return 0;}
+function calcINC(units,arari){let t=0;for(let u=1;u<=units;u++)t+=arari*getIR(u);return Math.round(t);}
+function bk(u){return u<=5?5:u>=13?13:u;}
+
+// ★ 図面作成なしの場合は、ARRCH配列の金額を引いてくる計算式
+function calc(g,p,u,r,q,arari,drawing='yes'){
+  const base=(BASE_SALARY[g]||350000)*12,posA=(POS_ALLOW[p]||0)*12,qualA=q*12;
+  let inc = 0;
+  if(drawing === 'no') {
+    inc = ARRCH_INC[u] || 0; // 図面なしはARRCH基準
+  } else {
+    inc = calcINC(u, arari); // 図面ありはPG基準
+  }
+  const bonus=BONUS[bk(u)][RI[r]];
+  return{base,posA,qualA,inc,bonus,total:base+posA+qualA+inc+bonus};
+}
+
+function fmt(n){return n.toLocaleString('ja-JP');}
+function fmtM(n){return(n/10000).toFixed(1)+'万';}
+function fmtMan(n){return Math.round(n/10000)+'万';}
+
+// Industry models (based on research data)
+function indSmall(u){return 3200000+150000*u;}
+function indLarge(u){return 3800000+350000*u;}
+function indTop(u){return 4000000+500000*u;}
+
+// 全セクションを一斉に更新する関数
+function updateAllGraphs() {
+  updateS1();
+  updateS3();
+  updateS4();
+  updateS5();
+}
+
+// ===== S1 =====
+function getQual(){const c=document.querySelectorAll('#qual-checks input:checked');return Math.min(Array.from(c).reduce((s,e)=>s+parseInt(e.value),0),30000);}
+function getS1(){return{g:document.getElementById('grade').value,p:document.getElementById('position').value,u:+document.getElementById('units').value,r:document.getElementById('rank').value,q:getQual(),drawing:document.getElementById('drawing').value};}
+
+function updateS1(){
+  const{g,p,u,r,q,drawing}=getS1(),arari=getArari(),s=calc(g,p,u,r,q,arari,drawing);
+  const colors=['#7a00df','#9b3ff0','#c084fc','#f59e0b','#10b981'];
+  const items=[{l:'基本給',v:s.base,c:colors[0]},{l:'役職手当',v:s.posA,c:colors[1]},{l:'資格手当',v:s.qualA,c:colors[2]},{l:'インセンティブ',v:s.inc,c:colors[3]},{l:'決算賞与',v:s.bonus,c:colors[4]}];
+  let bars=items.filter(i=>i.v>0).map(i=>{const pct=Math.max(i.v/s.total*100,2);return`<div class="bar-row"><div class="bar-label">${i.l}</div><div class="bar-wrap"><div class="bar-fill" style="width:${pct}%;background:${i.c}">${pct>15?fmt(i.v)+'円':''}</div></div><div class="bar-amt">${fmt(i.v)}円</div></div>`;}).join('');
+  document.getElementById('s1-result').innerHTML=`<div class="res"><div class="res-top">${g} ${POS_LABEL[p]} ｜ ${u}棟 ｜ ${r}評価</div><div class="res-val">${fmt(s.total)}<small>円/年</small></div><div class="res-sub">月額換算：${fmt(Math.round(s.total/12))}円</div><div class="res-bar" style="margin-top:24px">${bars}</div></div>`;
+  updateS2();
+}
+
+// ===== S2 Monthly =====
+function updateS2(){
+  const{g,p,u,r,q,drawing}=getS1(),arari=getArari(),s=calc(g,p,u,r,q,arari,drawing);
+  const mo=Math.round(s.total/12),fix=(BASE_SALARY[g]||350000)+(POS_ALLOW[p]||0)+q,incM=Math.round(s.inc/12),bonM=Math.round(s.bonus/12);
+  document.getElementById('s2-result').innerHTML=`<div class="B"><h3>${u}棟達成時の月額換算（${g} ${POS_LABEL[p]} ${r}）</h3><p class="cn">年間の各項目を12ヶ月で割った月額平均</p><div class="month-grid"><div class="mc"><div class="mcl">月額固定給</div><div class="mcv">${fmt(fix)}<small style="font-size:.55em;opacity:.5">円</small></div><div class="mcs">基本給+役職${q>0?'+資格':''}</div></div><div class="mc"><div class="mcl">INC月割り</div><div class="mcv">${fmt(incM)}<small style="font-size:.55em;opacity:.5">円</small></div><div class="mcs">年間INC÷12</div></div><div class="mc"><div class="mcl">賞与月割り</div><div class="mcv">${fmt(bonM)}<small style="font-size:.55em;opacity:.5">円</small></div><div class="mcs">決算賞与÷12</div></div><div class="mc total"><div class="mcl">月収トータル</div><div class="mcv">${fmt(mo)}<small style="font-size:.55em;opacity:.5">円</small></div><div class="mcs">年収${fmt(s.total)}円÷12</div></div></div></div>`;
+}
+
+// ===== S3 Roadmap =====
+let rmChart=null;
+function initRmSelects(){
+  ['rm-u1','rm-u3','rm-u5'].forEach((id,idx)=>{
+    const sel=document.getElementById(id);
+    const defs=[6,8,10];
+    for(let i=1;i<=20;i++){const o=document.createElement('option');o.value=i;o.textContent=i+'棟';if(i===defs[idx])o.selected=true;sel.appendChild(o);}
+  });
+}
+function getRmYears(){
+  const rank=document.getElementById('rm-rank').value,arari=getArari(),drawing=document.getElementById('drawing').value;
+  const y1={u:+document.getElementById('rm-u1').value,g:document.getElementById('rm-g1').value,p:document.getElementById('rm-p1').value};
+  const y3={u:+document.getElementById('rm-u3').value,g:document.getElementById('rm-g3').value,p:document.getElementById('rm-p3').value};
+  const y5={u:+document.getElementById('rm-u5').value,g:document.getElementById('rm-g5').value,p:document.getElementById('rm-p5').value};
+  const y2u=Math.round((y1.u+y3.u)/2),y4u=Math.round((y3.u+y5.u)/2);
+  return [
+    {label:'1年目',...y1,rank},
+    {label:'2年目',u:y2u,g:y1.g,p:y1.p,rank},
+    {label:'3年目',...y3,rank},
+    {label:'4年目',u:y4u,g:y3.g,p:y5.p,rank},
+    {label:'5年目',...y5,rank},
+  ].map(y=>({...y,sal:calc(y.g,y.p,y.u,y.rank,0,arari,drawing)}));
+}
+function updateS3(){
+  const years=getRmYears();
+  const stepsHTML=years.map(y=>{
+    const hl=y.sal.total>=10000000?' hl-rm':'';
+    return`<div class="rm-item${hl}"><div class="rm-year">${y.label}</div><div class="rm-units">${y.u}棟 ｜ ${y.g} ${POS_LABEL[y.p]}</div><div class="rm-salary">${fmtMan(y.sal.total)}</div><div class="rm-monthly">月${fmt(Math.round(y.sal.total/12))}円</div></div>`;
+  }).join('');
+  document.getElementById('s3-result').innerHTML=`<div class="rm-step">${stepsHTML}</div><p class="note">※2年目・4年目は前後年の中間値で補間。資格手当なし</p>`;
+
+  const ctx=document.getElementById('rm-chart').getContext('2d');
+  if(rmChart)rmChart.destroy();
+  const salaries=years.map(y=>y.sal.total);
+  rmChart=new Chart(ctx,{type:'line',data:{
+    labels:years.map(y=>y.label),
+    datasets:[{
+      label:'年収推移',data:salaries,
+      borderColor:'#7a00df',backgroundColor:'rgba(122,0,223,.1)',
+      borderWidth:3,pointRadius:6,pointBackgroundColor:salaries.map(s=>s>=10000000?'#7a00df':'#fff'),
+      pointBorderColor:'#7a00df',pointBorderWidth:2,tension:.3,fill:true
+    }]
+  },options:{
+    responsive:true,
+    plugins:{
+      legend:{display:false},
+      tooltip:{callbacks:{label:ctx=>fmt(ctx.raw)+'円（'+fmtM(ctx.raw)+'）'}},
+      annotation:{annotations:{
+        line1000:{type:'line',yMin:10000000,yMax:10000000,borderColor:'rgba(239,68,68,.6)',borderWidth:2,borderDash:[6,4],label:{display:true,content:'1,000万ライン',position:'start',backgroundColor:'rgba(239,68,68,.8)',font:{size:11,weight:'bold'},padding:4}},
+      }}
+    },
+    scales:{y:{ticks:{callback:v=>fmtM(v)},grid:{color:'#f3f4f6'}},x:{grid:{display:false}}}
+  }});
+}
+
+// ===== S4 Curve =====
+let cvChart=null;
+function updateS4(){
+  const g=document.getElementById('cv-grade').value;
+  const r=document.getElementById('cv-rank').value;
+  const drawing=document.getElementById('drawing').value;
+  const arari=getArari();
+  const units=Array.from({length:20},(_,i)=>i+1);
+  const GRADE_POS={
+    G2:['none'], G3:['none','kakaricho'], G4:['none','kakaricho','kacho'],
+    G5:['none','kacho','bucho'], G6:['none','bucho','jigyobucho'],
+    E4:['none'],E5:['none'],E6:['none'],
+  };
+  const allPositions=[
+    {key:'none',label:'役職なし',color:'#7a00df',dash:[],width:3},
+    {key:'kakaricho',label:'係長',color:'#9b3ff0',dash:[],width:2.5},
+    {key:'kacho',label:'課長',color:'#c084fc',dash:[5,5],width:2},
+    {key:'bucho',label:'部長',color:'#f59e0b',dash:[5,5],width:2},
+    {key:'jigyobucho',label:'事業部長',color:'#d97706',dash:[5,5],width:2},
+  ];
+  const eligible=GRADE_POS[g]||['none'];
+  const positions=allPositions.filter(pt=>eligible.includes(pt.key));
+  const datasets=positions.map(pt=>({
+    label:`${g} ${pt.label}`,
+    data:units.map(u=>calc(g,pt.key,u,r,0,arari,drawing).total),
+    borderColor:pt.color,backgroundColor:pt.color+'15',borderWidth:pt.width,borderDash:pt.dash,pointRadius:3,pointHoverRadius:6,tension:.3,fill:false
+  }));
+
+  const ctx=document.getElementById('cv-chart').getContext('2d');
+  if(cvChart)cvChart.destroy();
+  cvChart=new Chart(ctx,{type:'line',data:{labels:units.map(u=>u+'棟'),datasets},options:{
+    responsive:true,
+    interaction:{mode:'index',intersect:false},
+    plugins:{
+      legend:{position:'bottom',labels:{font:{size:11}}},
+      tooltip:{
+        mode:'index',intersect:false,
+        callbacks:{
+          title:items=>'棟数: '+items[0].label,
+          label:ctx=>`${ctx.dataset.label}: ${fmt(ctx.raw)}円（${fmtM(ctx.raw)}）`,
+          afterBody:items=>{
+            const vals=items.map(i=>i.raw).filter(v=>v>0);
+            if(vals.length>1){const diff=Math.max(...vals)-Math.min(...vals);return[`\n役職差: ${fmtM(diff)}`];}return[];
+          }
+        }
+      },
+      annotation:{annotations:{
+        line1000:{type:'line',yMin:10000000,yMax:10000000,borderColor:'#ef4444',borderWidth:2.5,borderDash:[8,4],
+          label:{display:true,content:'年収 1,000万円',position:'end',backgroundColor:'#ef4444',color:'#fff',font:{size:12,weight:'900'},padding:{x:10,y:4}}},
+        line2000:{type:'line',yMin:20000000,yMax:20000000,borderColor:'#7c3aed',borderWidth:2.5,borderDash:[8,4],
+          label:{display:true,content:'年収 2,000万円',position:'end',backgroundColor:'#7c3aed',color:'#fff',font:{size:12,weight:'900'},padding:{x:10,y:4}}},
+        box1000:{type:'box',yMin:9500000,yMax:10500000,backgroundColor:'rgba(239,68,68,.04)',borderWidth:0},
+        box2000:{type:'box',yMin:19500000,yMax:20500000,backgroundColor:'rgba(124,58,237,.04)',borderWidth:0},
+      }}
+    },
+    scales:{y:{ticks:{callback:v=>fmtM(v)},grid:{color:'#f3f4f6'}},x:{grid:{display:false}}}
+  }});
+}
+
+// ===== S5 Industry =====
+let indChart=null;
+function updateS5(){
+  const arari=getArari();
+  const drawing=document.getElementById('drawing').value;
+  const units=Array.from({length:16},(_,i)=>i+5);
+  const pgData=units.map(u=>calc('G4','kakaricho',u,'B+',0,arari,drawing).total);
+  const smallData=units.map(u=>indSmall(u));
+  const largeData=units.map(u=>indLarge(u));
+  const topData=units.map(u=>indTop(u));
+
+  const ctx=document.getElementById('ind-chart').getContext('2d');
+  const pgGrad=ctx.createLinearGradient(0,0,0,450);
+  pgGrad.addColorStop(0,'rgba(122,0,223,.25)');
+  pgGrad.addColorStop(1,'rgba(122,0,223,.02)');
+
+  if(indChart)indChart.destroy();
+  indChart=new Chart(ctx,{type:'line',data:{
+    labels:units.map(u=>u+'棟'),
+    datasets:[
+      {label:'中小ハウスメーカー',data:smallData,
+        borderColor:'rgba(96,165,250,.7)',backgroundColor:'rgba(96,165,250,.4)',
+        borderWidth:1,pointRadius:0,tension:.4,fill:'origin',order:5},
+      {label:'大手ハウスメーカー',data:largeData,
+        borderColor:'rgba(52,211,153,.7)',backgroundColor:'rgba(52,211,153,.4)',
+        borderWidth:1,pointRadius:0,tension:.4,fill:'-1',order:4},
+      {label:'業界トップ層（一部大手エース級）',data:topData,
+        borderColor:'rgba(251,146,60,.7)',backgroundColor:'rgba(251,146,60,.35)',
+        borderWidth:1,pointRadius:0,tension:.4,fill:'-1',order:3},
+      {label:'PG HOUSE（G4 係長 B+）',data:pgData,
+        borderColor:'#7a00df',backgroundColor:pgGrad,
+        borderWidth:4,pointRadius:6,pointBackgroundColor:'#7a00df',
+        pointBorderColor:'#fff',pointBorderWidth:2.5,pointHoverRadius:9,
+        tension:.3,fill:false,order:1},
+    ]
+  },options:{
+    responsive:true,
+    interaction:{mode:'index',intersect:false},
+    plugins:{
+      legend:{
+        position:'bottom',
+        labels:{
+          font:{size:11},
+          usePointStyle:true,pointStyle:'circle',
+          generateLabels:chart=>{
+            return chart.data.datasets.map((ds,i)=>({
+              text:ds.label,
+              fillStyle:ds.label.includes('PG')?'#7a00df':ds.backgroundColor,
+              strokeStyle:ds.label.includes('PG')?'#7a00df':ds.borderColor,
+              lineWidth:ds.label.includes('PG')?3:0,
+              pointStyle:'circle',
+              hidden:!chart.isDatasetVisible(i),
+              datasetIndex:i,
+              fontColor:ds.label.includes('PG')?'#7a00df':undefined,
+            }));
+          }
+        }
+      },
+      tooltip:{
+        mode:'index',intersect:false,
+        backgroundColor:'rgba(26,26,46,.95)',titleFont:{size:13,weight:'bold'},bodyFont:{size:12},
+        padding:14,cornerRadius:10,
+        callbacks:{
+          title:items=>'年間 '+items[0].label+' 契約時',
+          label:ctx=>{
+            const v=ctx.raw;const l=ctx.dataset.label;
+            if(l.includes('PG'))return' ★ PG HOUSE:  '+fmtM(v);
+            return'    '+l.replace('業界','').trim()+':  '+fmtM(v);
+          },
+          afterBody:items=>{
+            const pg=items.find(i=>i.dataset.label.includes('PG'));
+            const top=items.find(i=>i.dataset.label.includes('トップ'));
+            if(pg&&top){
+              const diff=pg.raw-top.raw;
+              const pct=top.raw>0?Math.round(diff/top.raw*100):0;
+              return['','─────────────────','PG HOUSEの優位:  +'+fmtM(diff)+' （+'+pct+'%）'];
+            }return[];
+          }
+        }
+      },
+      annotation:{annotations:{
+        line1000:{type:'line',yMin:10000000,yMax:10000000,
+          borderColor:'rgba(239,68,68,.4)',borderWidth:2,borderDash:[8,4],
+          label:{display:true,content:'1,000万ライン',position:'start',
+            backgroundColor:'rgba(239,68,68,.85)',color:'#fff',
+            font:{size:11,weight:'900'},padding:{x:10,y:5},borderRadius:4}},
+        avgLine:{type:'line',yMin:4470000,yMax:4470000,
+          borderColor:'rgba(234,179,8,.5)',borderWidth:1.5,borderDash:[4,4],
+          label:{display:true,content:'業界平均 447万',position:'end',
+            backgroundColor:'rgba(234,179,8,.85)',color:'#fff',
+            font:{size:10,weight:'bold'},padding:{x:8,y:4},borderRadius:4}},
+      }}
+    },
+    scales:{
+      y:{ticks:{callback:v=>fmtM(v),font:{size:11}},grid:{color:'rgba(0,0,0,.04)'},min:0},
+      x:{ticks:{font:{size:11,weight:'600'}},grid:{display:false}}
+    }
+  }});
+}
+
+// ===== GLOBAL ARARI =====
+function onArariChange(){updateAllGraphs();}
+
+// ===== INIT =====
+function addL(ids,fn){ids.forEach(id=>{const el=document.getElementById(id);if(el){el.addEventListener('change',fn);if(el.type==='number')el.addEventListener('input',fn);}});}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  const sel=document.getElementById('units');
+  for(let i=1;i<=20;i++){const o=document.createElement('option');o.value=i;o.textContent=i+'棟';if(i===10)o.selected=true;sel.appendChild(o);}
+
+  initRmSelects();
+
+  addL(['grade','position','units','rank'],updateS1);
+  updateS1();
+
+  document.querySelectorAll('.rm-sel').forEach(el=>el.addEventListener('change',updateS3));
+  updateS3();
+
+  addL(['cv-grade','cv-rank'],updateS4);
+  updateS4();
+
+  updateS5();
+});
+</script>
+</body>
+</html>
